@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>New Assessment · Crane Lifting Assessment</title>
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+<div class="app-shell">
+  <aside class="sidebar" id="sidebar"></aside>
+  <div class="main">
+    <div class="topbar">
+      <div>
+        <h2>New lift assessment</h2>
+        <div class="crumb">Check a proposed lift against the crane's load chart</div>
+      </div>
+      <a class="btn" href="history.html">View history</a>
+    </div>
+
+    <div class="content">
+      <div class="card">
+        <div class="section-title" style="margin-top:0;">Crane & configuration</div>
+        <div class="form-grid">
+          <div class="field">
+            <label for="craneModel">Crane model</label>
+            <select id="craneModel"></select>
+          </div>
+          <div class="field">
+            <label for="liftMode">Boom setup</label>
+            <select id="liftMode">
+              <option value="boom">Main boom only</option>
+              <option value="jib">Main boom + jib</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-grid" id="boomConfigRow">
+          <div class="field full">
+            <label for="configuration">Configuration / counterweight / outriggers</label>
+            <select id="configuration"></select>
+          </div>
+        </div>
+        <div class="form-grid" id="jibConfigRow" style="display:none;">
+          <div class="field full">
+            <label for="jibConfiguration">Jib configuration / outriggers</label>
+            <select id="jibConfiguration"></select>
+          </div>
+          <div class="field" id="jibLengthField">
+            <label for="jibLength">Jib length</label>
+            <select id="jibLength"></select>
+          </div>
+          <div class="field">
+            <label for="jibOffset">Jib offset</label>
+            <select id="jibOffset"></select>
+          </div>
+        </div>
+
+        <div class="section-title">Lift parameters</div>
+        <div class="form-grid">
+          <div class="field">
+            <label for="loadWeight">Load weight</label>
+            <div class="input-suffix"><input type="number" id="loadWeight" min="0" step="0.1" placeholder="e.g. 8.5"><span>tonnes</span></div>
+          </div>
+          <div class="field" id="radiusField">
+            <label for="radius">Working radius</label>
+            <div class="input-suffix"><input type="number" id="radius" min="0" step="0.1" placeholder="e.g. 6.0"><span>metres</span></div>
+            <span class="hint" id="radiusHint"></span>
+          </div>
+          <div class="field" id="boomAngleField" style="display:none;">
+            <label for="boomAngle">Boom angle</label>
+            <div class="input-suffix"><input type="number" id="boomAngle" min="0" max="90" step="0.5" placeholder="e.g. 65"><span>degrees</span></div>
+            <span class="hint" id="angleHint"></span>
+          </div>
+          <div class="field" id="boomLengthField">
+            <label for="boomLength">Boom length</label>
+            <select id="boomLength"></select>
+          </div>
+          <div class="field">
+            <label for="windSpeed">Current wind speed</label>
+            <div class="input-suffix"><input type="number" id="windSpeed" min="0" step="0.1" value="0"><span>m/s</span></div>
+            <span class="hint" id="windHint"></span>
+          </div>
+        </div>
+
+        <div id="rangeWarning"></div>
+
+        <div style="margin-top:18px; display:flex; gap:10px;">
+          <button class="btn btn-primary" id="btnCalculate">Calculate</button>
+          <button class="btn" id="btnReset">Reset</button>
+        </div>
+      </div>
+
+      <div id="resultPanel"></div>
+
+      <div id="saveRow" style="display:none; margin-top:16px;">
+        <div class="card">
+          <div class="section-title" style="margin-top:0;">Save this assessment</div>
+          <div class="form-grid">
+            <div class="field full">
+              <label for="assessorName">Assessed by</label>
+              <input type="text" id="assessorName" placeholder="Name of appointed person / lift supervisor">
+            </div>
+            <div class="field full">
+              <label for="notes">Notes (optional)</label>
+              <textarea id="notes" placeholder="Site conditions, ground bearing, obstructions, etc."></textarea>
+            </div>
+          </div>
+          <div style="margin-top:14px;">
+            <button class="btn btn-amber" id="btnSave">Save assessment to history</button>
+            <span id="saveConfirm" class="hint" style="margin-left:10px; color: var(--ok-green); font-weight:600;"></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="js/crane-data.js"></script>
+<script src="js/storage.js"></script>
+<script src="js/nav.js"></script>
+<script src="js/assessment.js"></script>
+</body>
+</html>

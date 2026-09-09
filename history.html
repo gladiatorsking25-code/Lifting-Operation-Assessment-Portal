@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Assessment History · Crane Lifting Assessment</title>
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+<div class="app-shell">
+  <aside class="sidebar" id="sidebar"></aside>
+  <div class="main">
+    <div class="topbar">
+      <div>
+        <h2>Assessment history</h2>
+        <div class="crumb">All saved lift assessments</div>
+      </div>
+      <a class="btn btn-primary" href="assessment.html">+ New assessment</a>
+    </div>
+
+    <div class="content">
+      <div class="toolbar">
+        <input type="search" id="search" placeholder="Search crane, assessor, notes…">
+        <select id="filterResult">
+          <option value="">All results</option>
+          <option value="pass">Allowed only</option>
+          <option value="fail">Not allowed only</option>
+        </select>
+        <select id="filterCrane"><option value="">All cranes</option></select>
+        <div class="spacer"></div>
+        <button class="btn" id="btnExportCsv">Export CSV</button>
+      </div>
+
+      <div id="tableWrap"></div>
+    </div>
+  </div>
+</div>
+
+<script src="js/crane-data.js"></script>
+<script src="js/storage.js"></script>
+<script src="js/nav.js"></script>
+<script>
+renderSidebar('history');
+
+const filterCrane = document.getElementById('filterCrane');
+filterCrane.innerHTML += Object.keys(CRANE_DATA).map(m => `<option value="${m}">${m}</option>`).join('');
+
+function render() {
+  const search = document.getElementById('search').value.toLowerCase();
+  const resultFilter = document.getElementById('filterResult').value;
+  const craneFilter = filterCrane.value;
+
+  let list = DB.getAssessments().sort((a,b) => new Date(b.date) - new Date(a.date));
+  list = list.filter(a => {
+    if (craneFilter && a.craneModel !== craneFilter) return false;
+    if (resultFilter === 'pass' && !a.isValid) return false;
+    if (resultFilter === 'fail' && a.isValid) return false;
+    if (search) {
+      const hay = `${a.craneModel} ${a.assessorName||''} ${a.notes||''} ${a.configuration||''}`.toLowerCase();
+      if (!hay.includes(search)) return false;
+    }
+    return true;
+  });
+
+  const wrap = document.getElementById('tableWrap');
+  if (!list.length) {
+    wrap.innerHTML = `<div class="card empty-state"><div class="icon">📋</div>No assessments match these filters.</div>`;
+    return;
+  }
+
+  wrap.innerHTML = `
+    <table class="data-table">
+      <thead><tr>
+        <th>Date</th><th>Crane</th><th>Config</th><th>Load (t)</th><th>Radius / Angle</th><th>Boom (m)</th>
+        <th>Wind (m/s)</th><th>Util.</th><th>Result</th><th>Assessed by</th><th></th>
+      </tr></thead>
+      <tbody>
+        ${list.map(a => `
+          <tr>
+            <td class="num">${fmtDate(a.date)}</td>
+            <td>${a.craneModel}</td>
+            <td>${a.configuration}</td>
+            <td class="num">${a.loadWeight.toFixed(1)}</td>
+            <td class="num">${a.jibMode ? `${a.boomAngle.toFixed(1)}° (${a.jibLength}m jib, ${a.jibOffset}° offset)` : (a.workingRadius != null ? a.workingRadius.toFixed(1) + ' m' : '—')}</td>
+            <td class="num">${a.boomLength != null ? a.boomLength.toFixed(1) : '—'}</td>
+            <td class="num">${a.windSpeed.toFixed(1)}</td>
+            <td class="num">${a.utilization < 999 ? a.utilization.toFixed(0)+'%' : '—'}</td>
+            <td>${a.isValid ? '<span class="badge badge-ok"><span class="badge-dot"></span>Allowed</span>' : '<span class="badge badge-fail"><span class="badge-dot"></span>Not allowed</span>'}</td>
+            <td>${a.assessorName || '—'}</td>
+            <td><button class="btn btn-sm btn-danger" onclick="removeAssessment('${a.id}')">Delete</button></td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>
+  `;
+}
+
+function removeAssessment(id) {
+  if (!confirm('Delete this assessment record? This cannot be undone.')) return;
+  DB.deleteAssessment(id);
+  render();
+}
+
+document.getElementById('search').addEventListener('input', render);
+document.getElementById('filterResult').addEventListener('change', render);
+filterCrane.addEventListener('change', render);
+
+document.getElementById('btnExportCsv').addEventListener('click', () => {
+  const rows = [['Date','Crane Model','Configuration','Load Weight (t)','Working Radius (m)','Boom Angle (deg)','Jib Length (m)','Jib Offset (deg)','Boom Length (m)','Wind Speed (m/s)','Max Capacity (t)','Utilization (%)','Result','Assessed By','Notes']];
+  DB.getAssessments().forEach(a => rows.push([
+    a.date, a.craneModel, a.configuration, a.loadWeight,
+    a.jibMode ? '' : a.workingRadius, a.jibMode ? a.boomAngle : '', a.jibMode ? a.jibLength : '', a.jibMode ? a.jibOffset : '',
+    a.boomLength, a.windSpeed, a.maximumCapacity.toFixed(2), a.utilization.toFixed(1), a.isValid ? 'ALLOWED' : 'NOT ALLOWED',
+    a.assessorName || '', (a.notes||'').replace(/\n/g,' ')
+  ]));
+  const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `lift-assessments-${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+});
+
+render();
+</script>
+</body>
+</html>

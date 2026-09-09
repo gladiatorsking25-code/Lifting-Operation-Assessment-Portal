@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard · Crane Lifting Assessment</title>
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+<div class="app-shell">
+  <aside class="sidebar" id="sidebar"></aside>
+  <div class="main">
+    <div class="topbar">
+      <div>
+        <h2>Dashboard</h2>
+        <div class="crumb">Overview of lifting activity</div>
+      </div>
+      <div style="display:flex; gap:10px;">
+        <a class="btn" href="permit.html">+ New permit</a>
+        <a class="btn btn-primary" href="assessment.html">+ New assessment</a>
+      </div>
+    </div>
+
+    <div class="content">
+      <div id="disclaimer-banner"></div>
+
+      <div class="grid grid-4" id="stat-cards"></div>
+
+      <div class="section-title">Permits expiring soon</div>
+      <div id="expiring-permits"></div>
+
+      <div class="section-title">Recent assessments</div>
+      <div id="recent-assessments"></div>
+    </div>
+  </div>
+</div>
+
+<script src="js/crane-data.js"></script>
+<script src="js/storage.js"></script>
+<script src="js/nav.js"></script>
+<script>
+renderSidebar('index');
+renderDisclaimer('disclaimer-banner');
+
+const assessments = DB.getAssessments().sort((a,b) => new Date(b.date) - new Date(a.date));
+const permits = DB.getPermits();
+
+const passCount = assessments.filter(a => a.isValid).length;
+const failCount = assessments.length - passCount;
+const activePermits = permits.filter(p => new Date(p.validTo) >= new Date() && p.status !== 'suspended');
+const criticalOpen = permits.filter(p => p.isCriticalLift && new Date(p.validTo) >= new Date()).length;
+
+document.getElementById('stat-cards').innerHTML = `
+  <div class="card stat-card">
+    <div class="label">Total assessments</div>
+    <div class="value">${assessments.length}</div>
+    <div class="foot">${passCount} allowed · ${failCount} not allowed</div>
+  </div>
+  <div class="card stat-card">
+    <div class="label">Active permits</div>
+    <div class="value ok">${activePermits.length}</div>
+    <div class="foot">of ${permits.length} total on file</div>
+  </div>
+  <div class="card stat-card">
+    <div class="label">Critical lifts (open)</div>
+    <div class="value ${criticalOpen ? 'danger' : ''}">${criticalOpen}</div>
+    <div class="foot">require appointed-person sign-off</div>
+  </div>
+  <div class="card stat-card">
+    <div class="label">Fleet on file</div>
+    <div class="value">${Object.keys(CRANE_DATA).length}</div>
+    <div class="foot">crane models configured</div>
+  </div>
+`;
+
+// Expiring within 48h
+const soon = permits.filter(p => {
+  const hrs = (new Date(p.validTo) - new Date()) / 36e5;
+  return hrs > -1 && hrs < 48 && p.status !== 'suspended';
+}).sort((a,b) => new Date(a.validTo) - new Date(b.validTo));
+
+document.getElementById('expiring-permits').innerHTML = soon.length ? `
+  <table class="data-table">
+    <thead><tr><th>Permit #</th><th>Location</th><th>Valid to</th><th>Status</th><th></th></tr></thead>
+    <tbody>
+      ${soon.map(p => {
+        const expired = new Date(p.validTo) < new Date();
+        return `<tr>
+          <td class="num">${p.permitNumber}</td>
+          <td>${p.location || '—'}</td>
+          <td class="num">${fmtDate(p.validTo)}</td>
+          <td>${expired ? '<span class="badge badge-fail"><span class="badge-dot"></span>Expired</span>' : '<span class="badge badge-warn"><span class="badge-dot"></span>Expiring soon</span>'}</td>
+          <td><a class="btn btn-sm" href="permit.html?id=${p.id}&mode=view">View</a></td>
+        </tr>`;
+      }).join('')}
+    </tbody>
+  </table>
+` : `<div class="card empty-state"><div class="icon">✓</div>No permits expiring in the next 48 hours.</div>`;
+
+const recent = assessments.slice(0, 6);
+document.getElementById('recent-assessments').innerHTML = recent.length ? `
+  <table class="data-table">
+    <thead><tr><th>Date</th><th>Crane</th><th>Load (t)</th><th>Radius / Angle</th><th>Boom (m)</th><th>Result</th></tr></thead>
+    <tbody>
+      ${recent.map(a => `<tr>
+        <td class="num">${fmtDate(a.date)}</td>
+        <td>${a.craneModel}</td>
+        <td class="num">${a.loadWeight.toFixed(1)}</td>
+        <td class="num">${a.jibMode ? a.boomAngle.toFixed(1) + '°' : (a.workingRadius != null ? a.workingRadius.toFixed(1) + ' m' : '—')}</td>
+        <td class="num">${a.boomLength != null ? a.boomLength.toFixed(1) : '—'}</td>
+        <td>${a.isValid ? '<span class="badge badge-ok"><span class="badge-dot"></span>Allowed</span>' : '<span class="badge badge-fail"><span class="badge-dot"></span>Not allowed</span>'}</td>
+      </tr>`).join('')}
+    </tbody>
+  </table>
+` : `<div class="card empty-state"><div class="icon">＋</div>No assessments yet. <a href="assessment.html">Run your first lift assessment</a>.</div>`;
+</script>
+</body>
+</html>
