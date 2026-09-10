@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<script src="js/auth.js"></script>
+<script>requireAuth();</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Fleet & Backup · Crane Lifting Assessment</title>
@@ -56,6 +58,8 @@
           the change — there's no database migration involved.
         </p>
       </div>
+
+      <div id="app-footer"></div>
     </div>
   </div>
 </div>
@@ -66,6 +70,7 @@
 <script>
 renderSidebar('settings');
 renderDisclaimer('disclaimer-banner');
+renderFooter('app-footer');
 
 function overallRadiusRange(spec) {
   let min = Infinity, max = -Infinity;

@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<script src="js/auth.js"></script>
+<script>requireAuth();</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>All Permits · Crane Lifting Assessment</title>
@@ -34,6 +36,7 @@
         </select>
       </div>
       <div id="tableWrap"></div>
+      <div id="app-footer"></div>
     </div>
   </div>
 </div>
@@ -43,6 +46,7 @@
 <script src="js/nav.js"></script>
 <script>
 renderSidebar('permits');
+renderFooter('app-footer');
 
 function statusOf(p) {
   if (p.status === 'suspended') return 'suspended';

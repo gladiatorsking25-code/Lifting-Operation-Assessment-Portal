@@ -15,6 +15,20 @@
 //   the jib; cross-check the corresponding "lifting heights" diagram in the spec sheet
 //   for the radius that a given angle produces before planning a jib lift.
 
+// ---- Regulatory wind-speed stop-work threshold ----
+// ADOSH-SF (Abu Dhabi OSH Center Safety Framework) Code of Practice CoP 34.0 —
+// "Safe Use of Lifting Equipment and Lifting Accessories" — requires lifting
+// operations to be planned and controlled against adverse weather, with lifting
+// suspended once wind conditions become unsafe. This tool applies a 38 km/h
+// (≈10.56 m/s) site stop-work wind threshold as the operational limit under that
+// Code of Practice. The crane's own manufacturer-rated wind limit (below) still
+// applies in full — whichever of the two figures is LOWER governs any given lift.
+// Always confirm the current, site-specific wind action limit with your appointed
+// person / OSH team; this constant does not replace that determination.
+const ADOSH_WIND_STOP_KMH = 38;
+const ADOSH_WIND_STOP_MS = Math.round((ADOSH_WIND_STOP_KMH / 3.6) * 100) / 100; // 10.56 m/s
+const ADOSH_COP_REFERENCE = 'ADOSH-SF CoP 34.0 – Safe Use of Lifting Equipment and Lifting Accessories';
+
 const DATA_NOTES = [
   {
     model: 'QY50KD',

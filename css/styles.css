@@ -305,3 +305,80 @@ canvas.sig-pad {
 }
 
 .footer-note { font-size: 11.5px; color: var(--ink-soft); margin-top: 24px; }
+
+/* ---------- Lift visualization ---------- */
+.viz-grid { display: grid; grid-template-columns: 1.15fr 1fr; gap: 18px; align-items: start; }
+@media (max-width: 980px) { .viz-grid { grid-template-columns: 1fr; } }
+.viz-panel { display: flex; flex-direction: column; gap: 8px; }
+.viz-panel h4 { margin: 0; font-size: 12.5px; text-transform: uppercase; letter-spacing: .05em; color: var(--ink-soft); font-weight: 700; }
+.viz-canvas { width: 100%; height: 300px; border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
+.viz-sketch { width: 100%; height: 300px; border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; background: #f6f7f5; }
+.viz-sketch svg { width: 100%; height: 100%; display: block; }
+.viz-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.viz-hint { font-size: 11.5px; color: var(--ink-soft); }
+
+.diagram-thumbs { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 10px; }
+.diagram-thumb { display: flex; flex-direction: column; gap: 6px; align-items: flex-start; }
+.diagram-thumb img {
+  width: 220px; max-width: 100%; border: 1px solid var(--line); border-radius: var(--radius);
+  background: #f6f7f5; cursor: zoom-in; display: block;
+}
+.diagram-thumb .cap { font-size: 11px; color: var(--ink-soft); }
+
+.lightbox-img { width: 100%; border-radius: var(--radius); border: 1px solid var(--line); }
+
+/* ---------- App footer (credit / contact / trial notice) ---------- */
+.app-footer {
+  margin-top: 36px;
+  padding: 16px 20px;
+  border-top: 1px solid var(--line);
+  font-size: 11.5px;
+  color: var(--ink-soft);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  align-items: center;
+}
+.app-footer .trial-tag {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 2px 8px; border-radius: 20px;
+  background: var(--warn-bg); color: #7a5308; font-weight: 700; font-size: 10.5px;
+  text-transform: uppercase; letter-spacing: .04em;
+}
+.app-footer a { color: var(--navy-700); text-decoration: none; font-weight: 600; }
+.app-footer a:hover { text-decoration: underline; }
+.app-footer .sep { color: var(--line); }
+
+@media print {
+  .viz-canvas, .diagram-thumb img { cursor: default; }
+}
+
+/* ---------- Pre-lift briefing / training / exclusion zone ---------- */
+.briefing-list { margin: 0 0 4px; padding-left: 20px; display: flex; flex-direction: column; gap: 8px; }
+.briefing-list li { font-size: 13px; line-height: 1.5; }
+
+.exclusion-figure {
+  font-family: 'IBM Plex Mono', monospace; font-weight: 700; font-size: 28px; color: var(--navy-900);
+  margin: 6px 0 2px;
+}
+.exclusion-figure span { display: block; font-family: Inter, sans-serif; font-weight: 500; font-size: 12px; color: var(--ink-soft); }
+
+.training-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; margin-top: 10px; }
+.training-cat { border: 1px solid var(--line); border-radius: var(--radius); padding: 12px 14px; background: #fff; }
+.training-cat.required { border-color: var(--danger-red); background: #fff8f7; }
+.training-cat-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; }
+.training-cat ul { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 5px; }
+.training-cat li { font-size: 12.5px; line-height: 1.45; color: var(--ink-soft); }
+.login-shell {
+  min-height: 100vh; display: flex; align-items: center; justify-content: center;
+  background: var(--paper); padding: 20px;
+}
+.login-card {
+  width: 100%; max-width: 380px; background: #fff; border: 1px solid var(--line);
+  border-radius: var(--radius); padding: 28px 26px; box-shadow: 0 8px 30px rgba(20,30,40,.08);
+}
+.login-card .field { margin-bottom: 14px; }
+
+/* ---------- Sidebar logout ---------- */
+.sidebar-foot .logout-link { display: inline-block; margin-top: 8px; color: var(--navy-700); font-weight: 600; text-decoration: none; }
+.sidebar-foot .logout-link:hover { text-decoration: underline; }

@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<script src="js/auth.js"></script>
+<script>requireAuth();</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Lifting Permit · Crane Lifting Assessment</title>
@@ -53,6 +55,8 @@
           </div>
         </div>
         <div id="assessmentSummary"></div>
+        <div id="assessmentDiagrams"></div>
+        <div id="liftPlanningSummary"></div>
 
         <div class="section-title">Requirements</div>
         <div class="checklist">
@@ -119,13 +123,18 @@
         <button class="btn btn-primary" id="btnSave">Save permit</button>
         <a class="btn" href="permits.html">Cancel</a>
       </div>
+
+      <div id="app-footer"></div>
     </div>
   </div>
 </div>
 
+<div id="lightboxRoot"></div>
+
 <script src="js/crane-data.js"></script>
 <script src="js/storage.js"></script>
 <script src="js/nav.js"></script>
+<script src="js/lift-planning.js"></script>
 <script src="js/signature-pad.js"></script>
 <script src="js/permit.js"></script>
 </body>

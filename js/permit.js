@@ -1,4 +1,54 @@
 renderSidebar('permit');
+renderFooter('app-footer');
+
+// ---- Lightbox for viewing a lift diagram at full size ----
+function openLightbox(src, caption) {
+  const root = document.getElementById('lightboxRoot');
+  if (!root) return;
+  root.innerHTML = `
+    <div class="modal-backdrop no-print" id="lightboxBackdrop">
+      <div class="modal" style="max-width:760px;">
+        <div class="modal-head">
+          <strong>${caption || 'Lift diagram'}</strong>
+          <button class="close-x" id="lightboxClose">&times;</button>
+        </div>
+        <div class="modal-body">
+          <img class="lightbox-img" src="${src}" alt="${caption || 'Lift diagram'}">
+        </div>
+        <div class="modal-foot">
+          <a class="btn btn-sm" href="${src}" download="${(caption || 'lift-diagram').replace(/\s+/g,'-').toLowerCase()}.png">Download PNG</a>
+          <button class="btn btn-sm" id="lightboxClose2">Close</button>
+        </div>
+      </div>
+    </div>`;
+  const close = () => { root.innerHTML = ''; };
+  document.getElementById('lightboxClose').addEventListener('click', close);
+  document.getElementById('lightboxClose2').addEventListener('click', close);
+  document.getElementById('lightboxBackdrop').addEventListener('click', (e) => { if (e.target.id === 'lightboxBackdrop') close(); });
+}
+
+// Renders diagram thumbnails into #assessmentDiagrams, preferring images already
+// saved on the permit itself (denormalized at save time), falling back to the
+// currently-linked assessment's images so a diagram shows before first save.
+function renderDiagramThumbs(images) {
+  const el = document.getElementById('assessmentDiagrams');
+  if (!el) return;
+  const shots = [
+    images && images.diagram3D ? { src: images.diagram3D, label: '3D view' } : null,
+    images && images.diagramSketch ? { src: images.diagramSketch, label: 'Plan sketch' } : null,
+  ].filter(Boolean);
+  if (!shots.length) { el.innerHTML = ''; return; }
+  el.innerHTML = `<div class="diagram-thumbs">
+    ${shots.map(s => `
+      <div class="diagram-thumb">
+        <img src="${s.src}" alt="${s.label}" data-caption="${s.label}">
+        <span class="cap">${s.label} — click to enlarge / download</span>
+      </div>`).join('')}
+  </div>`;
+  el.querySelectorAll('img').forEach(img => {
+    img.addEventListener('click', () => openLightbox(img.src, img.dataset.caption));
+  });
+}
 
 const CHECKLIST_ITEMS = [
   { key: 'hasLiftingPlan', label: 'Lifting plan available' },
@@ -67,13 +117,57 @@ function renderAssessmentSummary() {
   const id = assessmentSelect.value;
   const a = assessments.find(x => x.id === id);
   const el = document.getElementById('assessmentSummary');
-  if (!a) { el.innerHTML = ''; return; }
+  if (!a) { el.innerHTML = ''; renderDiagramThumbs(null); renderLiftPlanningSummary(null); return; }
   el.innerHTML = `<div class="banner ${a.isValid ? 'banner-ok' : 'banner-danger'}" style="margin-top:10px;">
     ${a.craneModel} · ${a.configuration} · ${a.loadWeight}t at ${assessmentGeometryLabel(a)} — capacity ${a.maximumCapacity.toFixed(2)}t —
     <strong>${a.isValid ? 'Allowed' : 'Not allowed'}</strong>
   </div>`;
+  // Prefer the permit's own saved copies (self-contained, survives the source
+  // assessment being edited/deleted later) if they still match this selection;
+  // otherwise fall back to the linked assessment's own images (e.g. before first save).
+  const images = (permit.assessmentId === a.id && (permit.diagram3D || permit.diagramSketch))
+    ? { diagram3D: permit.diagram3D, diagramSketch: permit.diagramSketch }
+    : { diagram3D: a.diagram3D, diagramSketch: a.diagramSketch };
+  renderDiagramThumbs(images);
+  renderLiftPlanningSummary(a);
 }
 assessmentSelect.addEventListener('change', renderAssessmentSummary);
+
+// Shows the pre-lift briefing, exclusion zone, and categorized training
+// requirements that were generated and saved with the linked assessment.
+function renderLiftPlanningSummary(a) {
+  const el = document.getElementById('liftPlanningSummary');
+  if (!el) return;
+  if (!a || (!a.briefingPoints && a.exclusionZoneM == null && !a.trainingRequirements)) { el.innerHTML = ''; return; }
+
+  const briefingHtml = (a.briefingPoints && a.briefingPoints.length)
+    ? `<div class="section-title" style="margin-top:16px;">Pre-lift briefing</div>
+       <ol class="briefing-list">${a.briefingPoints.map(b => `<li>${b}</li>`).join('')}</ol>`
+    : '';
+
+  const exclusionHtml = (a.exclusionZoneM != null || a.exclusionZoneNote)
+    ? `<div class="section-title">Exclusion zone</div>
+       ${a.exclusionZoneM != null ? `<div class="exclusion-figure">${a.exclusionZoneM} m <span>minimum barriered radius (starting point)</span></div>` : ''}
+       <p class="hint">${a.exclusionZoneNote || ''}</p>`
+    : '';
+
+  const trainingHtml = (a.trainingRequirements && a.trainingRequirements.length)
+    ? `<div class="section-title">Training required for the lifting team</div>
+       <div class="training-grid">
+         ${a.trainingRequirements.map(t => `
+           <div class="training-cat ${t.required ? 'required' : ''}">
+             <div class="training-cat-head">
+               <strong>${t.category}</strong>
+               <span class="badge ${t.required ? 'badge-fail' : 'badge-ok'}"><span class="badge-dot"></span>${t.required ? 'Mandatory for this lift' : 'Standard requirement'}</span>
+             </div>
+             <ul>${t.items.map(i => `<li>${i}</li>`).join('')}</ul>
+           </div>
+         `).join('')}
+       </div>`
+    : '';
+
+  el.innerHTML = briefingHtml + exclusionHtml + trainingHtml;
+}
 
 // ---- Critical lift hint ----
 function updateCriticalHint() {
@@ -192,6 +286,7 @@ function validate(data) {
 }
 
 document.getElementById('btnSave').addEventListener('click', () => {
+  const linkedAssessment = assessments.find(x => x.id === assessmentSelect.value) || null;
   const data = {
     ...permit,
     projectNumber: document.getElementById('projectNumber').value.trim(),
@@ -203,6 +298,11 @@ document.getElementById('btnSave').addEventListener('click', () => {
     otherPermits: document.getElementById('otherPermits').value.trim(),
     isCriticalLift: document.getElementById('radCritical').checked,
     assessmentId: assessmentSelect.value || null,
+    // Denormalize the linked assessment's lift diagrams onto the permit itself so
+    // the permit stays self-contained (viewable/printable/downloadable) even if
+    // the source assessment is later edited or deleted.
+    diagram3D: linkedAssessment ? (linkedAssessment.diagram3D || null) : null,
+    diagramSketch: linkedAssessment ? (linkedAssessment.diagramSketch || null) : null,
     hasRiskAssessment: document.getElementById('chkRiskAssessment').checked,
     hasMethodStatement: document.getElementById('chkMethodStatement').checked,
     personInCharge: document.getElementById('personInCharge').value.trim(),

@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<script src="js/auth.js"></script>
+<script>requireAuth();</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Dashboard · Crane Lifting Assessment</title>
@@ -31,6 +33,8 @@
 
       <div class="section-title">Recent assessments</div>
       <div id="recent-assessments"></div>
+
+      <div id="app-footer"></div>
     </div>
   </div>
 </div>
@@ -41,6 +45,7 @@
 <script>
 renderSidebar('index');
 renderDisclaimer('disclaimer-banner');
+renderFooter('app-footer');
 
 const assessments = DB.getAssessments().sort((a,b) => new Date(b.date) - new Date(a.date));
 const permits = DB.getPermits();

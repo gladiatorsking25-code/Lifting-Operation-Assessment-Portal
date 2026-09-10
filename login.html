@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sign in · Crane Lifting Assessment</title>
+<link rel="stylesheet" href="css/styles.css">
+<script src="js/auth.js"></script>
+<script>if (AUTH.isLoggedIn()) { const p = new URLSearchParams(location.search).get('next'); location.replace(p || 'index.html'); }</script>
+</head>
+<body>
+<div class="login-shell">
+  <div class="login-card">
+    <div class="brand-row" style="justify-content:center; margin-bottom:18px;">
+      <span class="mark">CL</span>
+      <div>
+        <h1 style="margin:0;">Lifting Assessment</h1>
+        <div class="sub">SITE OPS TOOL</div>
+      </div>
+    </div>
+
+    <div class="banner banner-warn" style="margin-bottom:18px;">
+      <svg width="16" height="16" viewBox="0 0 24 24"><path d="M12 2L1 21h22L12 2z" stroke="currentColor" stroke-width="1.6" fill="none"/><path d="M12 9v5M12 17h.01" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      <div><strong>Trial · educational use only.</strong> This sign-in is a simple access gate, not real security — do not enter sensitive personal data.</div>
+    </div>
+
+    <form id="loginForm">
+      <div class="field">
+        <label for="username">Username</label>
+        <input type="text" id="username" autocomplete="username" required>
+      </div>
+      <div class="field">
+        <label for="password">Password</label>
+        <input type="password" id="password" autocomplete="current-password" required>
+      </div>
+      <div id="loginError"></div>
+      <button class="btn btn-primary" type="submit" style="width:100%; margin-top:8px;">Sign in</button>
+    </form>
+
+    <div id="app-footer" style="margin-top:26px;"></div>
+  </div>
+</div>
+
+<script src="js/nav.js"></script>
+<script>
+renderFooter('app-footer');
+
+document.getElementById('loginForm').addEventListener('submit', (e) => {
+  e.preventDefault();
+  const u = document.getElementById('username').value.trim();
+  const p = document.getElementById('password').value;
+  const errEl = document.getElementById('loginError');
+  if (AUTH.login(u, p)) {
+    const next = new URLSearchParams(location.search).get('next');
+    location.href = next || 'index.html';
+  } else {
+    errEl.innerHTML = `<div class="banner banner-danger" style="margin-top:6px;">Incorrect username or password.</div>`;
+  }
+});
+</script>
+</body>
+</html>
