@@ -1,0 +1,40 @@
+// firestore.rules — deploy with `firebase deploy --only firestore:rules`
+// (Firebase Console → Firestore Database → Rules also lets you paste this
+// directly). This is what actually protects data once Firebase is wired up —
+// unlike js/auth.js's client-side gate, these run on Google's servers and
+// can't be bypassed from devtools.
+//
+// Model: every signed-in user only ever reads/writes documents under their
+// own users/{uid} document — matching the users/{uid}/assessments and
+// users/{uid}/permits collections js/cloud-sync.js writes to.
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    match /users/{uid} {
+      allow read: if request.auth != null && request.auth.uid == uid;
+      allow create: if request.auth != null && request.auth.uid == uid;
+      // subscriptionStatus should only ever be changed by the Cloud Function
+      // that verifies a Play purchase (using the Admin SDK, which bypasses
+      // these rules entirely) — a signed-in user can update their own doc,
+      // but never that one field, so a client can't just grant themselves a
+      // subscription.
+      allow update: if request.auth != null && request.auth.uid == uid
+                    && !('subscriptionStatus' in request.resource.data.diff(resource.data).affectedKeys());
+
+      match /assessments/{docId} {
+        allow read, write: if request.auth != null && request.auth.uid == uid;
+      }
+      match /permits/{docId} {
+        allow read, write: if request.auth != null && request.auth.uid == uid;
+      }
+    }
+
+    // Explicit default-deny for everything else (Firestore already denies by
+    // default with no matching rule; this just makes that auditable).
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

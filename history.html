@@ -3,10 +3,28 @@
 <head>
 <script src="js/auth.js"></script>
 <script>requireAuth();</script>
+<script src="js/consent.js"></script>
+<script>requireConsent();</script>
+<script src="js/firebase-config.js"></script>
+<script src="js/firebase-init.js"></script>
+<script src="js/firebase-auth.js"></script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Assessment History · Crane Lifting Assessment</title>
 <link rel="stylesheet" href="css/styles.css">
+<!-- Installable-app / PWA metadata (see manifest.webmanifest, sw.js, js/pwa.js) -->
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#16283a">
+<meta name="color-scheme" content="light">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Lift Assess">
+<meta name="description" content="Crane load-chart assessments, lift diagrams, pre-lift briefings and permits to work, aligned with ADOSH-SF CoP 34.0. A planning aid — not a replacement for the certified load chart or an Appointed Person's sign-off.">
+<link rel="icon" href="assets/icons/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
+<link rel="apple-touch-icon" href="assets/icons/apple-touch-icon-180.png">
+<script src="js/app-version.js"></script>
 </head>
 <body>
 <div class="app-shell">
@@ -43,7 +61,10 @@
 
 <script src="js/crane-data.js"></script>
 <script src="js/storage.js"></script>
+<script src="js/cloud-sync.js"></script>
 <script src="js/nav.js"></script>
+<script src="js/lift-planning.js"></script>
+<script src="js/assessment-detail.js"></script>
 <script>
 renderSidebar('history');
 renderFooter('app-footer');
@@ -78,7 +99,7 @@ function render() {
     <table class="data-table">
       <thead><tr>
         <th>Date</th><th>Crane</th><th>Config</th><th>Load (t)</th><th>Radius / Angle</th><th>Boom (m)</th>
-        <th>Wind (m/s)</th><th>Util.</th><th>Result</th><th>Assessed by</th><th>Diagram</th><th></th>
+        <th>Wind (m/s)</th><th>Util.</th><th>Result</th><th>Assessed by</th><th></th><th></th>
       </tr></thead>
       <tbody>
         ${list.map(a => `
@@ -93,7 +114,7 @@ function render() {
             <td class="num">${a.utilization < 999 ? a.utilization.toFixed(0)+'%' : '—'}</td>
             <td>${a.isValid ? '<span class="badge badge-ok"><span class="badge-dot"></span>Allowed</span>' : '<span class="badge badge-fail"><span class="badge-dot"></span>Not allowed</span>'}</td>
             <td>${a.assessorName || '—'}</td>
-            <td>${(a.diagram3D || a.diagramSketch) ? `<button class="btn btn-sm" onclick="viewDiagram('${a.id}')">View</button>` : '—'}</td>
+            <td><button class="btn btn-sm btn-primary" onclick="viewAssessment('${a.id}')">View full assessment</button></td>
             <td><button class="btn btn-sm btn-danger" onclick="removeAssessment('${a.id}')">Delete</button></td>
           </tr>
         `).join('')}
@@ -108,6 +129,8 @@ function removeAssessment(id) {
   render();
 }
 
+// Kept available in case anything else links straight to the diagrams —
+// viewAssessment() below now covers this plus every other field.
 function viewDiagram(id) {
   const a = DB.getAssessments().find(x => x.id === id);
   if (!a) return;
@@ -143,6 +166,154 @@ function viewDiagram(id) {
   document.getElementById('lightboxBackdrop').addEventListener('click', (e) => { if (e.target.id === 'lightboxBackdrop') close(); });
 }
 
+// Full detailed assessment view. The rendering now lives in
+// js/assessment-detail.js so permit.html (and anything added later) can show the
+// exact same record layout, and so records saved before the briefing/training/
+// exclusion-zone fields existed get those sections recomputed instead of
+// rendering as an almost-empty page with just the two diagrams.
+function viewAssessment(id) {
+  const a = DB.getAssessments().find(x => x.id === id);
+  if (!a) return;
+  AssessmentDetail.openModal(a, 'lightboxRoot');
+}
+
+// The previous, inline version of the detail view. Superseded by
+// AssessmentDetail.openModal() above but kept intact and callable.
+function viewAssessmentBasic(id) {
+  const a = DB.getAssessments().find(x => x.id === id);
+  if (!a) return;
+
+  const spec = CRANE_DATA[a.craneModel];
+  const env = a.environment || {};
+  const training = a.trainingRequirements || [];
+  const briefing = a.briefingPoints || [];
+  const linkedPermit = DB.getPermits().find(p => p.assessmentId === a.id) || null;
+
+  const shots = [
+    a.diagram3D ? { src: a.diagram3D, label: '3D view' } : null,
+    a.diagramSketch ? { src: a.diagramSketch, label: 'Plan sketch' } : null,
+  ].filter(Boolean);
+
+  const paramRows = [
+    ['Crane model', a.craneModel],
+    ['Configuration', a.configuration],
+    ['Load weight', `${a.loadWeight.toFixed(2)} t`],
+    a.jibMode
+      ? ['Boom angle / jib', `${a.boomAngle.toFixed(1)}° · ${a.jibLength} m jib · ${a.jibOffset}° offset`]
+      : ['Working radius', a.workingRadius != null ? `${a.workingRadius.toFixed(1)} m` : '—'],
+    ['Boom length', a.boomLength != null ? `${a.boomLength.toFixed(2)} m` : `${(spec ? spec.maxBoomLength : '—')} m (full boom + jib)`],
+    ['Wind speed', `${a.windSpeed.toFixed(1)} m/s`],
+    ['Wind / slew direction', (a.windDirection != null || a.slewDirection != null) ? `Wind ${a.windDirection ?? '—'}° · Slew ${a.slewDirection ?? '—'}°` : '—'],
+    ['Chart capacity at this point', `${a.maximumCapacity.toFixed(2)} t`],
+    ['Utilization', a.utilization < 999 ? `${a.utilization.toFixed(0)}%` : '—'],
+  ];
+
+  const envRows = [
+    ['Visibility', env.visibility ? LiftPlanning.envLabel('visibility', env.visibility) : '—'],
+    ['Precipitation', env.precipitation ? LiftPlanning.envLabel('precipitation', env.precipitation) : '—'],
+    ['Lighting', env.lighting ? LiftPlanning.envLabel('lighting', env.lighting) : '—'],
+    ['Ground conditions', env.ground ? LiftPlanning.envLabel('ground', env.ground) : '—'],
+    ['Load largest dimension', env.loadDimensionM ? `${env.loadDimensionM.toFixed(1)} m` : '—'],
+  ];
+
+  const root = document.getElementById('lightboxRoot');
+  root.innerHTML = `
+    <div class="modal-backdrop" id="assessBackdrop">
+      <div class="modal" id="assessModal" style="max-width:920px;">
+        <div class="modal-head">
+          <div>
+            <strong>${a.craneModel} — ${fmtDate(a.date)}</strong>
+            <div class="hint">Assessed by ${a.assessorName || '—'}</div>
+          </div>
+          <button class="close-x no-print" id="assessClose">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div class="result-panel" style="margin-top:0;">
+            <div class="result-head ${a.isValid ? 'ok' : 'fail'}">
+              <div class="verdict">${a.isValid ? '✓ Lift was allowed' : '✕ Lift was not allowed'}</div>
+              <div class="util">${a.utilization < 999 ? a.utilization.toFixed(0) + '%' : '—'} of capacity</div>
+            </div>
+          </div>
+
+          <div class="section-title">Lift parameters</div>
+          <table class="spec-table">
+            ${paramRows.map(([k,v]) => `<tr><td>${k}</td><td>${v}</td></tr>`).join('')}
+          </table>
+
+          <div class="section-title">Environment & site conditions</div>
+          <table class="spec-table">
+            ${envRows.map(([k,v]) => `<tr><td>${k}</td><td>${v}</td></tr>`).join('')}
+          </table>
+
+          ${a.exclusionZoneM != null || a.exclusionZoneNote ? `
+            <div class="section-title">Exclusion zone</div>
+            ${a.exclusionZoneM != null ? `<div class="exclusion-figure">${a.exclusionZoneM} m</div>` : ''}
+            <p class="hint">${a.exclusionZoneNote || ''}</p>
+          ` : ''}
+
+          ${briefing.length ? `
+            <div class="section-title">Pre-lift briefing</div>
+            <ol class="briefing-list">${briefing.map(pt => `<li>${pt}</li>`).join('')}</ol>
+          ` : ''}
+
+          ${training.length ? `
+            <div class="section-title">Training requirements</div>
+            ${training.map(t => `
+              <div class="card" style="margin-bottom:10px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                  <strong>${t.category}</strong>
+                  <span class="badge ${t.required ? 'badge-warn' : 'badge-neutral'}"><span class="badge-dot"></span>${t.required ? 'Mandatory for this lift' : 'Recommended'}</span>
+                </div>
+                <ul class="briefing-list" style="margin:0;">${t.items.map(i => `<li>${i}</li>`).join('')}</ul>
+              </div>
+            `).join('')}
+          ` : ''}
+
+          ${shots.length ? `
+            <div class="section-title">Lift diagrams</div>
+            <div style="display:flex; gap:14px; flex-wrap:wrap;">
+              ${shots.map(s => `
+                <div style="flex:1; min-width:280px;">
+                  <img class="lightbox-img" src="${s.src}" alt="${s.label}">
+                  <div style="text-align:center; margin-top:6px;">
+                    <span class="hint">${s.label}</span>
+                    <a class="btn btn-sm no-print" style="margin-left:8px;" href="${s.src}" download="${a.id}-${s.label.replace(/\s+/g,'-').toLowerCase()}.png">Download</a>
+                  </div>
+                </div>`).join('')}
+            </div>
+          ` : ''}
+
+          ${a.notes ? `
+            <div class="section-title">Notes</div>
+            <p style="white-space:pre-wrap; font-size:13.5px;">${a.notes}</p>
+          ` : ''}
+
+          ${linkedPermit ? `
+            <div class="section-title">Linked permit</div>
+            <div class="banner banner-info no-print">
+              This assessment is linked to permit <strong class="num">${linkedPermit.permitNumber}</strong>.
+              <a class="btn btn-sm" style="margin-left:8px;" href="permit.html?id=${linkedPermit.id}&mode=view">View permit</a>
+            </div>
+          ` : ''}
+        </div>
+        <div class="modal-foot no-print">
+          <button class="btn btn-sm" id="assessPrint">Print / save as PDF</button>
+          <button class="btn btn-sm" id="assessClose2">Close</button>
+        </div>
+      </div>
+    </div>`;
+
+  const close = () => { root.innerHTML = ''; };
+  document.getElementById('assessClose').addEventListener('click', close);
+  document.getElementById('assessClose2').addEventListener('click', close);
+  document.getElementById('assessBackdrop').addEventListener('click', (e) => { if (e.target.id === 'assessBackdrop') close(); });
+  document.getElementById('assessPrint').addEventListener('click', () => {
+    document.body.classList.add('printing-modal');
+    window.print();
+  });
+  window.addEventListener('afterprint', () => document.body.classList.remove('printing-modal'), { once: true });
+}
+
 document.getElementById('search').addEventListener('input', render);
 document.getElementById('filterResult').addEventListener('change', render);
 filterCrane.addEventListener('change', render);
@@ -165,5 +336,6 @@ document.getElementById('btnExportCsv').addEventListener('click', () => {
 
 render();
 </script>
+<script src="js/pwa.js"></script>
 </body>
 </html>

@@ -7,6 +7,142 @@ runs from any browser, deployable free on GitHub Pages.
 > **Trial · educational use only.** Not for real operational lift decisions.
 > Developed by **Sabir Amin** — sabiriis143@gmail.com — +971 55 362 3535.
 
+## Changelog
+
+- **Multilingual equipment checklists (English / Arabic / Urdu / Hindi)**: a new
+  monthly inspection and maintenance checklist for earthmoving machinery and cranes.
+  `checklist.html` + `js/checklist.js` (the form), `checklists.html` (saved records),
+  `js/checklist-data.js` (15 machine types, 23 icon-headed sections, ~150 items, all
+  four languages), `js/i18n.js` (translation layer, RTL handling), `js/mailer.js`
+  (email forwarding). Nothing was removed; `DB` gained `getChecklists` /
+  `saveChecklist` / `deleteChecklist` and backup export/import now carries them, with
+  backups written before this version still importing cleanly.
+  - **Sections are filtered by machine.** Each equipment type carries tags, and a
+    section appears only if it applies — an excavator gets undercarriage and
+    attachments, a mobile crane gets load chart, rope/hook, slew and outriggers. A
+    mobile crane comes out at 117 items, an excavator at 86, rather than one
+    undifferentiated list with half of it marked N/A.
+  - **Colour coding.** Equipment passing the month's inspection carries that month's
+    colour tag, so anyone on site can see at a glance whether a machine's inspection
+    is current. Both a 12-colour monthly rotation and the 4-colour quarterly rotation
+    are supported; the records page shows the legend with the current period marked.
+  - **Maintenance checklist** is a section of its own (service intervals, oil and
+    filter changes, greasing, torque checks, oil sampling, next service due).
+  - **Email forwarding.** From and To are left empty for you to fill; To and Cc accept
+    multiple addresses and are validated, naming any entry that looks wrong rather than
+    dropping it. The covering note is drafted fresh each time from a pool of phrasings —
+    the facts never vary, only the wording — and the ask is matched to the result
+    ("for your information and necessary action" for a pass, an out-of-service
+    instruction for a failure). Three hand-off routes, since the app has no mail server:
+    a proper `.eml` file (keeps From/To/Cc and the full body, opens as a draft in
+    Outlook), `mailto:`, and copy-to-clipboard.
+  - Right-to-left is handled for Arabic and Urdu across the whole document, including
+    the mobile nav drawer, with Noto webfonts and system fallbacks.
+- **Play Store launch readiness (PWA → TWA)**: the app is now an installable,
+  offline-capable progressive web app, which is what Google's `Bubblewrap` needs in
+  order to wrap it as a Trusted Web Activity. Added `manifest.webmanifest`, `sw.js`
+  (offline cache + update handling), `js/pwa.js` (registration, update prompt,
+  offline bar, install button), `offline.html`, a full icon set in
+  `assets/icons/` (including maskable icons, the 512×512 Play listing icon and the
+  1024×500 feature graphic), `.well-known/assetlinks.json` + its README,
+  `twa-manifest.json`, `js/app-version.js`, `about.html`, `account-deletion.html`,
+  and `PLAY_STORE_LAUNCH.md`. Nothing was removed.
+- **Phone layout**: the fixed-sidebar desktop layout overflowed badly below ~900px,
+  which would have been a problem for an app shipped on phones. Added a responsive
+  layer to `css/styles.css` — off-canvas nav drawer (hamburger injected by
+  `js/nav.js`), stacked topbar, horizontally scrolling data tables, full-screen
+  modals, and 44px touch targets. The desktop layout is untouched; all of it lives
+  inside media queries.
+- **Legal pages made publicly reachable**: `terms.html` and `privacy.html` no longer
+  sit behind `requireAuth()`. Google Play requires the privacy policy URL to load
+  without signing in, and a gated policy URL is a routine cause of rejection. Both
+  pages also gained UAE-specific sections — cross-border transfer under PDPL,
+  Play Billing, retention, deletion route, controller identity, subscription
+  auto-renewal/cancellation, and refunds under Consumer Protection Law 15/2020.
+- **History → full assessment record**: `js/assessment-detail.js` is a new shared
+  module that renders a saved assessment completely — verdict and utilization bar,
+  every lift parameter plus the remaining margin and load-vs-crane-max, the wind
+  stop-work rule that was applied and which limit governed, environment/site
+  conditions, exclusion zone, pre-lift briefing, categorized training requirements,
+  both lift diagrams, notes, every linked permit, and the record metadata. Two
+  things it does that the old inline version did not: it **regenerates** the
+  briefing/training/exclusion-zone sections for records saved before those fields
+  existed (clearly labelled as a reconstruction), which is why older records used to
+  render as little more than the two diagrams; and it HTML-escapes all user-entered
+  text. `history.html` delegates to it; the old inline renderer is still there as
+  `viewAssessmentBasic()`, and `viewDiagram()` is untouched.
+- **Cloud sync, real accounts & subscription scaffold (Firebase)**: added an
+  optional Firebase backend — `js/firebase-config.js`, `js/firebase-init.js`,
+  `js/firebase-auth.js`, `js/cloud-sync.js`, `firestore.rules`, and a
+  `functions/` Cloud Function that verifies Google Play subscription purchases.
+  `js/storage.js` now mirrors saves/deletes to Firestore when signed into a cloud
+  account, and `login.html` shows a cloud sign-in/sign-up option. **All of this is
+  dormant until you fill in a real Firebase config** — see `FIREBASE_SETUP.md`.
+  Nothing existing was removed; `js/auth.js` and the local-only flow are untouched
+  and remain the default.
+- **Play Console Data Safety answers**: added `PLAY_DATA_SAFETY.md` with ready-to-
+  enter answers for both the local-only and the Firebase-enabled build.
+
+- **History → "View full assessment"**: the history page's diagram-only lightbox is
+  now a full assessment detail view — lift parameters, environment/site conditions,
+  exclusion zone, pre-lift briefing, categorized training requirements, the lift
+  diagrams (still downloadable), notes, and a link straight to any permit this
+  assessment is attached to — plus a "Print / save as PDF" button scoped to just that
+  record. The old diagram-only `viewDiagram()` function is still in the code and
+  still works; nothing was removed, `viewAssessment()` is additive.
+- **Terms of Use / Privacy Notice + consent gate**: added `terms.html`, `privacy.html`,
+  and `js/consent.js` (a one-time acceptance screen layered on top of the existing
+  `js/auth.js` sign-in — neither file was changed). See "Launching on Google Play"
+  below for why these were added and what still needs a lawyer's review.
+
+## Launching on Google Play — cheapest path that's still legally sound
+
+This section is additive guidance, not a rebuild — nothing above has been removed to
+make room for it. I'm not a lawyer, and this isn't legal advice; treat it as a
+starting point to bring to a UAE-licensed lawyer, not a finished compliance package.
+
+**1. Legal groundwork (done in this update, needs a lawyer's pass)**
+- `terms.html` and `privacy.html` are now in the app, drafted with UAE Federal
+  Decree-Law No. 45 of 2021 (PDPL) and the ADOSH-SF safety context in mind.
+- `js/consent.js` adds a one-time "accept before use" screen, separate from the
+  existing sign-in gate — gives you a recorded (client-side) acceptance, which matters
+  both for PDPL consent and for limiting liability on a safety-adjacent product.
+- Before charging money: get these reviewed by a UAE-licensed lawyer. Many startup-
+  focused firms and free-zone legal clinics (DIFC, ADGM, Sharjah Media City, etc.) offer
+  fixed-fee ToS/Privacy review packages that are far cheaper than a full engagement —
+  worth asking for one specifically, rather than open-ended hourly billing.
+- Given this app influences real lifting decisions, get a quote for **professional
+  indemnity / errors & omissions insurance** even at a small scale. This is the one
+  place where "cheaper" has a real ceiling — it's the main financial protection if a
+  lift goes wrong and someone argues the app contributed.
+
+**2. Cheapest technical path onto the Play Store**
+- Package the existing web app as a **Trusted Web Activity (TWA)** using Google's free
+  `Bubblewrap` CLI, rather than rewriting it natively. A TWA is effectively a thin
+  Android wrapper around the hosted site (GitHub Pages already gives you free HTTPS
+  hosting, which TWA requires).
+- One-time Google Play Developer registration fee: **US$25**. No recurring Play fee
+  beyond Google's standard revenue share on in-app purchases.
+- For subscriptions sold *through* Google Play: use the **Play Billing / Digital Goods
+  API** for TWAs (Google's supported path for billing web-wrapped apps) rather than
+  linking out to an external checkout page. Routing digital subscription purchases
+  outside Play Billing is against Play Store policy for this kind of app and risks
+  suspension — it isn't actually the cheap option once you account for that risk.
+- You'll need a minimal backend to verify purchase tokens against the Google Play
+  Developer API before unlocking paid features — a single serverless function (Firebase
+  Cloud Functions or a Cloudflare Worker, both with generous free tiers) is enough at
+  small scale, and is the natural place to also start the Firebase/Supabase migration
+  `js/storage.js` is already structured for (see "Data storage" below).
+
+**3. Play Console submission basics**
+- **Data Safety form**: answer it honestly against what's actually true today (all
+  data stored locally on-device, nothing collected by the developer) — and update it
+  the day you add any backend, since Google spot-checks this against real app
+  behaviour.
+- **Content rating**: this is a professional planning tool, not directed at children —
+  rate it accordingly in Play Console's questionnaire.
+- **Privacy policy URL**: point it at the hosted `privacy.html`.
+
 ## Signing in
 
 This build sits behind a simple sign-in screen:
@@ -177,14 +313,66 @@ js/nav.js              Shared sidebar + disclaimer banner + footer + sign-out
 js/signature-pad.js    Canvas-based signature capture
 js/assessment.js       Assessment page logic
 js/permit.js           Permit page logic
+js/consent.js          One-time Terms/Privacy acceptance gate (additive, sits above auth.js)
+js/assessment-detail.js Full saved-assessment record renderer (shared; used by history.html)
+
+--- Equipment checklists (EN / AR / UR / HI) ---
+checklist.html          Monthly inspection & maintenance checklist form
+checklists.html         Saved checklist records, colour coded by month
+js/checklist-data.js    Machine types, sections, items, icons, colour schemes — EDIT THIS to add items
+js/checklist.js         Checklist page logic
+js/i18n.js              Translation layer + RTL handling + language switcher
+js/mailer.js            Address parsing, randomised draft, .eml / mailto / clipboard
+terms.html              Terms of Use
+privacy.html            Privacy Notice
+about.html              Version, support, licences, safety scope
+account-deletion.html   Public data/account deletion page (required by Google Play)
+offline.html            Offline fallback shown by the service worker
+
+--- Play Store / installable-app packaging ---
+manifest.webmanifest    Web app manifest (name, icons, start_url, scope)
+sw.js                   Service worker — offline cache + update handling
+js/pwa.js               SW registration, update prompt, offline bar, install button
+js/app-version.js       APP_VERSION / APP_VERSION_CODE / publisher identity — fill this in
+assets/icons/           Launcher + maskable icons, Play listing icon, feature graphic
+.well-known/assetlinks.json  Digital Asset Links (see .well-known/README.md)
+twa-manifest.json       Bubblewrap config for building the Android package
+PLAY_STORE_LAUNCH.md    Cheapest legally-sound launch path, UAE specifics, checklist
+.claude/launch.json     Local dev-server config (dev convenience only)
 ```
+
+### Versioning — four numbers that must move together
+
+A deployment where these drift is exactly what makes a shipped fix look like it
+never landed, because the browser keeps serving the cached build:
+
+| Where | Field |
+|---|---|
+| `js/app-version.js` | `APP_VERSION`, `APP_VERSION_CODE` |
+| `sw.js` | `CACHE_VERSION` |
+| `twa-manifest.json` | `appVersionName`, `appVersionCode` |
+
+`APP_VERSION_CODE` must strictly increase for every Play upload and can never be
+reused.
 
 ## Extending it
 
 - **Add a crane model**: add a new entry to `CRANE_DATA` in `js/crane-data.js`
   following the existing shape — no other file needs to change; the crane selector
   and lift diagrams pick it up automatically.
-- **Add a checklist item**: add `{ key, label }` to `CHECKLIST_ITEMS` in `js/permit.js`.
+- **Add a permit checklist item**: add `{ key, label }` to `CHECKLIST_ITEMS` in `js/permit.js`.
+- **Add an equipment-checklist item**: append to the relevant section's `items` in
+  `js/checklist-data.js` with a unique `id` and all four translations. **Never reuse an
+  `id` for a different question** — saved records store answers keyed by id, so a reused
+  id makes old records report the wrong thing. Add a new id instead.
+- **Add a machine type**: add an entry to `EQUIPMENT_TYPES` with the `tags` that decide
+  which sections it gets. Tags in use: `crane`, `lifting`, `earthmoving`, `wheeled`,
+  `tracked`, `outriggers`, `tower`, `forks`, `mewp`, `attachments`, `dozer`, `tipper`,
+  `road`, `compaction`.
+- **Add a language**: add the code to `LANGS` in `js/i18n.js`, add the key to every
+  entry in `STRINGS`, and to every `{ en, ar, ur, hi }` object in `js/checklist-data.js`.
+  `I18n.t()` falls back to English for anything missing, so a partial translation
+  degrades rather than breaking.
 - **Change the sign-in credentials**: edit `CREDENTIALS` in `js/auth.js` (remember:
   still not real security — see **Signing in** above).
 - **Change the wind stop-work threshold**: edit `ADOSH_WIND_STOP_KMH` in

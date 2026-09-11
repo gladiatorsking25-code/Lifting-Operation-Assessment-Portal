@@ -7,6 +7,22 @@
 <link rel="stylesheet" href="css/styles.css">
 <script src="js/auth.js"></script>
 <script>if (AUTH.isLoggedIn()) { const p = new URLSearchParams(location.search).get('next'); location.replace(p || 'index.html'); }</script>
+<script src="js/firebase-config.js"></script>
+<script src="js/firebase-init.js"></script>
+<script src="js/firebase-auth.js"></script>
+<!-- Installable-app / PWA metadata (see manifest.webmanifest, sw.js, js/pwa.js) -->
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#16283a">
+<meta name="color-scheme" content="light">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Lift Assess">
+<meta name="description" content="Crane load-chart assessments, lift diagrams, pre-lift briefings and permits to work, aligned with ADOSH-SF CoP 34.0. A planning aid — not a replacement for the certified load chart or an Appointed Person's sign-off.">
+<link rel="icon" href="assets/icons/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
+<link rel="apple-touch-icon" href="assets/icons/apple-touch-icon-180.png">
+<script src="js/app-version.js"></script>
 </head>
 <body>
 <div class="login-shell">
@@ -37,6 +53,27 @@
       <button class="btn btn-primary" type="submit" style="width:100%; margin-top:8px;">Sign in</button>
     </form>
 
+    <div id="cloudLoginSection" style="display:none; margin-top:22px; padding-top:20px; border-top:1px solid var(--line);">
+      <div style="text-align:center; font-size:12px; color:var(--ink-soft); margin-bottom:14px; text-transform:uppercase; letter-spacing:.05em;">Or sign in with a cloud account</div>
+      <form id="cloudLoginForm">
+        <div class="field">
+          <label for="cloudEmail">Email</label>
+          <input type="email" id="cloudEmail" autocomplete="email" required>
+        </div>
+        <div class="field">
+          <label for="cloudPassword">Password</label>
+          <input type="password" id="cloudPassword" autocomplete="current-password" required minlength="6">
+        </div>
+        <div id="cloudLoginError"></div>
+        <button class="btn btn-amber" type="submit" style="width:100%; margin-top:8px;" id="cloudSubmitBtn">Sign in</button>
+      </form>
+      <div style="display:flex; justify-content:space-between; margin-top:10px; font-size:12.5px;">
+        <a href="#" id="toggleModeLink">Need an account? Sign up</a>
+        <a href="#" id="forgotPasswordLink">Forgot password?</a>
+      </div>
+      <p class="hint" style="margin-top:10px;">A cloud account syncs your assessments and permits across devices. Local-only sign-in above still works exactly as before.</p>
+    </div>
+
     <div id="app-footer" style="margin-top:26px;"></div>
   </div>
 </div>
@@ -57,6 +94,58 @@ document.getElementById('loginForm').addEventListener('submit', (e) => {
     errEl.innerHTML = `<div class="banner banner-danger" style="margin-top:6px;">Incorrect username or password.</div>`;
   }
 });
+
+// ---- Cloud (Firebase) sign-in, shown only when Firebase is configured ----
+if (typeof FIREBASE_READY !== 'undefined' && FIREBASE_READY) {
+  document.getElementById('cloudLoginSection').style.display = 'block';
+
+  let mode = 'signin'; // or 'signup'
+  const cloudErr = document.getElementById('cloudLoginError');
+  const submitBtn = document.getElementById('cloudSubmitBtn');
+  const toggleLink = document.getElementById('toggleModeLink');
+
+  function setMode(m) {
+    mode = m;
+    submitBtn.textContent = m === 'signin' ? 'Sign in' : 'Create account';
+    toggleLink.textContent = m === 'signin' ? 'Need an account? Sign up' : 'Have an account? Sign in';
+    cloudErr.innerHTML = '';
+  }
+  toggleLink.addEventListener('click', (e) => { e.preventDefault(); setMode(mode === 'signin' ? 'signup' : 'signin'); });
+
+  document.getElementById('forgotPasswordLink').addEventListener('click', async (e) => {
+    e.preventDefault();
+    const email = document.getElementById('cloudEmail').value.trim();
+    if (!email) { cloudErr.innerHTML = `<div class="banner banner-warn" style="margin-top:6px;">Enter your email above first, then tap "Forgot password?".</div>`; return; }
+    try {
+      await CloudAuth.resetPassword(email);
+      cloudErr.innerHTML = `<div class="banner banner-ok" style="margin-top:6px;">Password reset email sent to ${email}.</div>`;
+    } catch (err) {
+      cloudErr.innerHTML = `<div class="banner banner-danger" style="margin-top:6px;">${err.message}</div>`;
+    }
+  });
+
+  document.getElementById('cloudLoginForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const email = document.getElementById('cloudEmail').value.trim();
+    const password = document.getElementById('cloudPassword').value;
+    cloudErr.innerHTML = '';
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Please wait…';
+    try {
+      if (mode === 'signup') await CloudAuth.signUp(email, password);
+      else await CloudAuth.signIn(email, password);
+      // CloudAuth flips the same session flag requireAuth() checks.
+      if (typeof AUTH !== 'undefined') sessionStorage.setItem(AUTH.SESSION_KEY, '1');
+      const next = new URLSearchParams(location.search).get('next');
+      location.href = next || 'index.html';
+    } catch (err) {
+      cloudErr.innerHTML = `<div class="banner banner-danger" style="margin-top:6px;">${err.message || 'Sign-in failed.'}</div>`;
+      submitBtn.disabled = false;
+      setMode(mode);
+    }
+  });
+}
 </script>
+<script src="js/pwa.js"></script>
 </body>
 </html>

@@ -7,7 +7,8 @@ const DB = {
   KEYS: {
     assessments: 'cla_assessments',
     permits: 'cla_permits',
-    counter: 'cla_permit_counter'
+    counter: 'cla_permit_counter',
+    checklists: 'cla_checklists'
   },
 
   _get(key) {
@@ -31,6 +32,22 @@ const DB = {
     }
   },
 
+  // Fire-and-forget hooks into js/cloud-sync.js. Both are no-ops unless
+  // Firebase has been configured (see js/firebase-config.js) and the user is
+  // signed in with a real (Firebase) account — the app behaves exactly as it
+  // did before cloud sync existed until then. Wrapped defensively so a
+  // missing/unloaded CloudSync never breaks a plain local save.
+  _cloudPush(collectionName, record) {
+    try {
+      if (typeof CloudSync !== 'undefined') CloudSync.push(collectionName, record);
+    } catch (e) { console.error('Cloud sync push skipped', e); }
+  },
+  _cloudRemove(collectionName, id) {
+    try {
+      if (typeof CloudSync !== 'undefined') CloudSync.remove(collectionName, id);
+    } catch (e) { console.error('Cloud sync remove skipped', e); }
+  },
+
   // ---- Assessments ----
   getAssessments() {
     return this._get(this.KEYS.assessments);
@@ -40,11 +57,13 @@ const DB = {
     assessment.id = assessment.id || ('A-' + Date.now());
     list.push(assessment);
     this._set(this.KEYS.assessments, list);
+    this._cloudPush('assessments', assessment);
     return assessment;
   },
   deleteAssessment(id) {
     const list = this.getAssessments().filter(a => a.id !== id);
     this._set(this.KEYS.assessments, list);
+    this._cloudRemove('assessments', id);
   },
 
   // ---- Permits ----
@@ -61,11 +80,13 @@ const DB = {
       list.push(permit);
     }
     this._set(this.KEYS.permits, list);
+    this._cloudPush('permits', permit);
     return permit;
   },
   deletePermit(id) {
     const list = this.getPermits().filter(p => p.id !== id);
     this._set(this.KEYS.permits, list);
+    this._cloudRemove('permits', id);
   },
   nextPermitNumber() {
     let n = parseInt(localStorage.getItem(this.KEYS.counter) || '0', 10) + 1;
@@ -74,28 +95,60 @@ const DB = {
     return `LP-${year}-${String(n).padStart(4, '0')}`;
   },
 
+  // ---- Equipment checklists (monthly inspection & maintenance) ----
+  getChecklists() {
+    return this._get(this.KEYS.checklists);
+  },
+  saveChecklist(checklist) {
+    const list = this.getChecklists();
+    const idx = checklist.id ? list.findIndex(c => c.id === checklist.id) : -1;
+    if (idx >= 0) {
+      list[idx] = checklist;
+    } else {
+      checklist.id = checklist.id || ('C-' + Date.now());
+      list.push(checklist);
+    }
+    this._set(this.KEYS.checklists, list);
+    this._cloudPush('checklists', checklist);
+    return checklist;
+  },
+  deleteChecklist(id) {
+    const list = this.getChecklists().filter(c => c.id !== id);
+    this._set(this.KEYS.checklists, list);
+    this._cloudRemove('checklists', id);
+  },
+
   // ---- Backup / restore ----
   exportAll() {
     return {
       exportedAt: new Date().toISOString(),
       assessments: this.getAssessments(),
-      permits: this.getPermits()
+      permits: this.getPermits(),
+      checklists: this.getChecklists()
     };
   },
+  // Backups written before checklists existed simply have no `checklists` key —
+  // `|| []` keeps those files importable, and a merge of an old backup leaves
+  // any checklists already on this device alone.
   importAll(data, mode = 'merge') {
     if (mode === 'replace') {
       this._set(this.KEYS.assessments, data.assessments || []);
       this._set(this.KEYS.permits, data.permits || []);
+      this._set(this.KEYS.checklists, data.checklists || []);
       return;
     }
     const existingA = this.getAssessments();
     const existingP = this.getPermits();
+    const existingC = this.getChecklists();
     const idsA = new Set(existingA.map(a => a.id));
     const idsP = new Set(existingP.map(p => p.id));
+    const idsC = new Set(existingC.map(c => c.id));
     (data.assessments || []).forEach(a => { if (!idsA.has(a.id)) existingA.push(a); });
     (data.permits || []).forEach(p => { if (!idsP.has(p.id)) existingP.push(p); });
+    (data.checklists || []).forEach(c => { if (!idsC.has(c.id)) existingC.push(c); });
     this._set(this.KEYS.assessments, existingA);
     this._set(this.KEYS.permits, existingP);
+    this._set(this.KEYS.checklists, existingC);
   }
 };
 
