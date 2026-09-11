@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin · Subscriptions</title>
+<link rel="stylesheet" href="css/styles.css">
+<meta name="theme-color" content="#16283a">
+<meta name="color-scheme" content="light">
+<link rel="icon" href="assets/icons/favicon.ico" sizes="any">
+<script src="js/auth.js"></script>
+<script src="js/firebase-config.js"></script>
+<script src="js/firebase-init.js"></script>
+<script src="js/firebase-auth.js"></script>
+<script src="js/app-version.js"></script>
+<script src="js/subscription-config.js"></script>
+<script src="js/entitlements.js"></script>
+<script src="js/access.js"></script>
+</head>
+<body>
+<div class="app-shell">
+  <aside class="sidebar" id="sidebar"></aside>
+  <div class="main">
+    <div class="topbar">
+      <div>
+        <h2>Admin — subscriptions</h2>
+        <div class="crumb">Owner control over trials and subscriptions</div>
+      </div>
+      <div><a class="btn" href="index.html">Back to app</a></div>
+    </div>
+    <div class="content">
+      <div id="adminGate"></div>
+      <div id="adminBody" hidden>
+        <div class="toolbar">
+          <input type="search" id="adminSearch" placeholder="Search email / uid / status…">
+          <div class="spacer"></div>
+          <button class="btn" id="adminRefresh">Refresh</button>
+        </div>
+        <div id="adminResult"></div>
+        <div id="adminTable"></div>
+      </div>
+      <div id="app-footer"></div>
+    </div>
+  </div>
+</div>
+<script src="js/crane-data.js"></script>
+<script src="js/storage.js"></script>
+<script src="js/nav.js"></script>
+<script>renderSidebar(''); renderFooter('app-footer');</script>
+<script src="js/admin.js"></script>
+</body>
+</html>

@@ -44,7 +44,9 @@ function renderSidebar(active) {
       <div class="section-label">Configuration</div>
       ${items.slice(6,8).map(navLink).join('')}
     </nav>
-    <div class="sidebar-foot">Data stored locally in this browser.<br>Export a backup regularly.<br>
+    <div class="sidebar-foot">
+      <div id="navSubStatus" class="nav-sub-status"></div>
+      Data stored locally in this browser.<br>Export a backup regularly.<br>
       <a href="terms.html">Terms</a> · <a href="privacy.html">Privacy</a> · <a href="account-deletion.html">Delete data</a><br>
       ${typeof APP_BUILD_LABEL !== 'undefined' ? `<span class="sidebar-build">${APP_BUILD_LABEL}</span><br>` : ''}
       <a href="#" class="logout-link" id="navLogoutLink">Sign out</a></div>
@@ -53,10 +55,16 @@ function renderSidebar(active) {
   if (logoutLink) {
     logoutLink.addEventListener('click', (e) => {
       e.preventDefault();
+      // Real-accounts mode: sign out of Firebase (and local) via Access.
+      if (typeof Access !== 'undefined' && Access.firebaseOn && Access.firebaseOn()) {
+        Access.signOut();
+        return;
+      }
       if (typeof AUTH !== 'undefined') AUTH.logout();
       location.href = 'login.html';
     });
   }
+  renderSubscriptionStatus();
   mountMobileNavToggle();
   // Additive: if Firebase has been configured (see js/firebase-config.js),
   // start watching real cloud auth state / Firestore sync. No-ops entirely
@@ -69,6 +77,33 @@ function renderSidebar(active) {
       ${item.label}
     </a>`;
   }
+}
+
+// Shows the account's trial / subscription state in the sidebar, plus a
+// Subscribe link and (for admins) an Admin link. No-ops entirely when Firebase
+// isn't configured, so the local-only build is unchanged.
+function renderSubscriptionStatus() {
+  const el = document.getElementById('navSubStatus');
+  if (!el) return;
+  if (typeof Access === 'undefined' || !Access.firebaseOn || !Access.firebaseOn()) return;
+
+  Access.armAuthWatch(function (user, access, doc) {
+    if (!user || !access) { el.innerHTML = ''; return; }
+    let line = '';
+    if (access.state === 'admin') {
+      line = 'Administrator account.';
+    } else if (access.state === 'trial') {
+      const left = (typeof Entitlements !== 'undefined') ? Entitlements.daysLeft(access.until) : null;
+      line = `Free trial — ${left} day${left === 1 ? '' : 's'} left. <a href="subscribe.html">Subscribe</a>`;
+    } else if (access.state === 'active' || access.state === 'granted') {
+      line = 'Subscription active.';
+    } else if (access.state === 'locked') {
+      line = 'Trial ended. <a href="subscribe.html">Subscribe</a>';
+    }
+    const adminLink = (doc && doc.role === 'admin') ? ' · <a href="admin.html">Admin</a>' : '';
+    const emailLine = user.email ? `<span class="nav-sub-email">${user.email}</span><br>` : '';
+    el.innerHTML = line ? `${emailLine}<span class="nav-sub-line">${line}${adminLink}</span>` : (emailLine + (adminLink ? `<span class="nav-sub-line">${adminLink.replace(/^ · /, '')}</span>` : ''));
+  });
 }
 
 // On phones the sidebar becomes an off-canvas drawer (see the "Phone / tablet

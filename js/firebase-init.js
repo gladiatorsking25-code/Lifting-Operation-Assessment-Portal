@@ -19,7 +19,10 @@ if (FIREBASE_READY) {
     const scripts = [
       `https://www.gstatic.com/firebasejs/${SDK_VERSION}/firebase-app-compat.js`,
       `https://www.gstatic.com/firebasejs/${SDK_VERSION}/firebase-auth-compat.js`,
-      `https://www.gstatic.com/firebasejs/${SDK_VERSION}/firebase-firestore-compat.js`
+      `https://www.gstatic.com/firebasejs/${SDK_VERSION}/firebase-firestore-compat.js`,
+      // functions-compat is needed for the subscription callables
+      // (verifyPlayPurchase, adminSetSubscription, adminListUsers).
+      `https://www.gstatic.com/firebasejs/${SDK_VERSION}/firebase-functions-compat.js`
     ];
     function loadNext(i) {
       if (i >= scripts.length) {

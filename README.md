@@ -9,6 +9,32 @@ runs from any browser, deployable free on GitHub Pages.
 
 ## Changelog
 
+- **Real accounts, trial→paid subscriptions & owner control (v1.4.0)**: replaced
+  the fake local login with a real-accounts-only model and put subscription control
+  on the server. New: `js/subscription-config.js` (trial length, product IDs),
+  `js/entitlements.js` (server-truth access state machine), `js/access.js` (the
+  `requireAccess()` gate that routes to login/paywall), `js/billing.js` (Play
+  Billing via the Digital Goods API), `subscribe.html` (paywall), `admin.html` +
+  `js/admin.js` (owner dashboard to grant/revoke/extend/comp and set admins).
+  Extended `functions/index.js` (trial-on-signup trigger, admin-only callables,
+  Play real-time notifications) and hardened `firestore.rules` (admin role;
+  **all** entitlement fields are now server-only). **Read `SECURITY.md`** — it's
+  the honest security model + the activation checklist.
+  - **Model:** free trial → all paid. A new account gets `TRIAL_DAYS` of full
+    access, then the app is gated behind the paywall until there's an active Play
+    subscription or an admin grant. Owner keeps a manual override (comp/extend/
+    revoke) in the admin dashboard. Purchases auto-unlock; RTDN reflects cancels.
+  - **Security truth:** the client only *reads* entitlement; the Firestore rules
+    forbid a user writing any entitlement field, so nobody can self-grant. The
+    Firebase web config is public by design (not a secret); the only real secret
+    (Play API access) stays server-side in the Cloud Function.
+  - **Safe rollout:** everything is dormant behind `FIREBASE_READY`. Until you
+    paste a real Firebase config into `js/firebase-config.js`, the app is
+    **unchanged** and still uses the local gate — it is not bricked waiting for
+    setup. Verified: with Firebase off, every page loads and gates exactly as
+    before. The live Firebase/Play flows are built to spec but must be tested
+    against your own project (checklist in `SECURITY.md` §7).
+
 - **Third-party certificate register with photo capture (v1.3.1)**: each equipment
   checklist can now hold third-party certificates — inspection certificates,
   operator/rigger/banksman competency certificates, and lifting-accessory
@@ -357,6 +383,17 @@ js/mailer.js            Address parsing, randomised draft, .eml / mailto / clipb
 js/photo.js             Camera capture + on-device image resize (canvas)
 js/certificate-storage.js  Certificate photo blobs in IndexedDB (out of localStorage)
 js/certificate-report.js   Certificate rows + shareable HTML report + Email/WhatsApp share
+
+--- Accounts & subscriptions (activation-ready; see SECURITY.md) ---
+js/subscription-config.js  Trial length, Play product IDs, package name
+js/entitlements.js         Server-truth access state machine (computeAccess)
+js/access.js               requireAccess() gate → login / paywall routing
+js/billing.js              Play Billing purchase flow (Digital Goods API)
+subscribe.html             Paywall (trial ended / subscribe)
+admin.html + js/admin.js   Owner dashboard: grant/revoke/extend/comp, set admins
+functions/index.js         Cloud Functions: trial trigger, verify, RTDN, admin actions
+firestore.rules            Server-enforced boundary (admin role; entitlement fields locked)
+SECURITY.md                The security model + activation & test checklist
 terms.html              Terms of Use
 privacy.html            Privacy Notice
 about.html              Version, support, licences, safety scope

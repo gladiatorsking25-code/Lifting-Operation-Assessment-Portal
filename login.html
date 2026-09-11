@@ -6,7 +6,6 @@
 <title>Sign in · Crane Lifting Assessment</title>
 <link rel="stylesheet" href="css/styles.css">
 <script src="js/auth.js"></script>
-<script>if (AUTH.isLoggedIn()) { const p = new URLSearchParams(location.search).get('next'); location.replace(p || 'index.html'); }</script>
 <script src="js/firebase-config.js"></script>
 <script src="js/firebase-init.js"></script>
 <script src="js/firebase-auth.js"></script>
@@ -23,6 +22,9 @@
 <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
 <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon-180.png">
 <script src="js/app-version.js"></script>
+<script src="js/subscription-config.js"></script>
+<script src="js/entitlements.js"></script>
+<script src="js/access.js"></script>
 </head>
 <body>
 <div class="login-shell">
@@ -35,26 +37,10 @@
       </div>
     </div>
 
-    <div class="banner banner-warn" style="margin-bottom:18px;">
-      <svg width="16" height="16" viewBox="0 0 24 24"><path d="M12 2L1 21h22L12 2z" stroke="currentColor" stroke-width="1.6" fill="none"/><path d="M12 9v5M12 17h.01" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-      <div><strong>Trial · educational use only.</strong> This sign-in is a simple access gate, not real security — do not enter sensitive personal data.</div>
-    </div>
-
-    <form id="loginForm">
-      <div class="field">
-        <label for="username">Username</label>
-        <input type="text" id="username" autocomplete="username" required>
-      </div>
-      <div class="field">
-        <label for="password">Password</label>
-        <input type="password" id="password" autocomplete="current-password" required>
-      </div>
-      <div id="loginError"></div>
-      <button class="btn btn-primary" type="submit" style="width:100%; margin-top:8px;">Sign in</button>
-    </form>
-
-    <div id="cloudLoginSection" style="display:none; margin-top:22px; padding-top:20px; border-top:1px solid var(--line);">
-      <div style="text-align:center; font-size:12px; color:var(--ink-soft); margin-bottom:14px; text-transform:uppercase; letter-spacing:.05em;">Or sign in with a cloud account</div>
+    <!-- ===== Real accounts (shown when Firebase is configured) ===== -->
+    <div id="cloudSection" hidden>
+      <h2 id="cloudHeading" style="margin:0 0 4px; font-size:18px;">Sign in</h2>
+      <p class="hint" id="cloudSub" style="margin-bottom:16px;"></p>
       <form id="cloudLoginForm">
         <div class="field">
           <label for="cloudEmail">Email</label>
@@ -65,13 +51,33 @@
           <input type="password" id="cloudPassword" autocomplete="current-password" required minlength="6">
         </div>
         <div id="cloudLoginError"></div>
-        <button class="btn btn-amber" type="submit" style="width:100%; margin-top:8px;" id="cloudSubmitBtn">Sign in</button>
+        <button class="btn btn-primary" type="submit" style="width:100%; margin-top:8px;" id="cloudSubmitBtn">Sign in</button>
       </form>
-      <div style="display:flex; justify-content:space-between; margin-top:10px; font-size:12.5px;">
-        <a href="#" id="toggleModeLink">Need an account? Sign up</a>
+      <div style="display:flex; justify-content:space-between; margin-top:12px; font-size:12.5px;">
+        <a href="#" id="toggleModeLink">New here? Create an account</a>
         <a href="#" id="forgotPasswordLink">Forgot password?</a>
       </div>
-      <p class="hint" style="margin-top:10px;">A cloud account syncs your assessments and permits across devices. Local-only sign-in above still works exactly as before.</p>
+      <p class="hint" id="trialNote" style="margin-top:12px;"></p>
+    </div>
+
+    <!-- ===== Legacy local gate (shown only until Firebase is configured) ===== -->
+    <div id="localSection" hidden>
+      <div class="banner banner-warn" style="margin-bottom:18px;">
+        <svg width="16" height="16" viewBox="0 0 24 24"><path d="M12 2L1 21h22L12 2z" stroke="currentColor" stroke-width="1.6" fill="none"/><path d="M12 9v5M12 17h.01" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        <div><strong>Local trial gate.</strong> This is a simple offline access gate, not real security. Real accounts activate automatically once Firebase is configured (see SECURITY.md).</div>
+      </div>
+      <form id="loginForm">
+        <div class="field">
+          <label for="username">Username</label>
+          <input type="text" id="username" autocomplete="username" required>
+        </div>
+        <div class="field">
+          <label for="password">Password</label>
+          <input type="password" id="password" autocomplete="current-password" required>
+        </div>
+        <div id="loginError"></div>
+        <button class="btn btn-primary" type="submit" style="width:100%; margin-top:8px;">Sign in</button>
+      </form>
     </div>
 
     <div id="app-footer" style="margin-top:26px;"></div>
@@ -81,69 +87,78 @@
 <script src="js/nav.js"></script>
 <script>
 renderFooter('app-footer');
+const $ = (id) => document.getElementById(id);
+const FB_ON = typeof FIREBASE_READY !== 'undefined' && FIREBASE_READY;
 
-document.getElementById('loginForm').addEventListener('submit', (e) => {
-  e.preventDefault();
-  const u = document.getElementById('username').value.trim();
-  const p = document.getElementById('password').value;
-  const errEl = document.getElementById('loginError');
-  if (AUTH.login(u, p)) {
-    const next = new URLSearchParams(location.search).get('next');
-    location.href = next || 'index.html';
-  } else {
-    errEl.innerHTML = `<div class="banner banner-danger" style="margin-top:6px;">Incorrect username or password.</div>`;
+if (!FB_ON) {
+  // ---- Firebase not configured: legacy local gate, unchanged behaviour ----
+  $('localSection').hidden = false;
+  if (AUTH.isLoggedIn()) {
+    const p = new URLSearchParams(location.search).get('next');
+    location.replace(p && /^[\w.-]+\.html/.test(p) ? p : 'index.html');
   }
-});
-
-// ---- Cloud (Firebase) sign-in, shown only when Firebase is configured ----
-if (typeof FIREBASE_READY !== 'undefined' && FIREBASE_READY) {
-  document.getElementById('cloudLoginSection').style.display = 'block';
-
-  let mode = 'signin'; // or 'signup'
-  const cloudErr = document.getElementById('cloudLoginError');
-  const submitBtn = document.getElementById('cloudSubmitBtn');
-  const toggleLink = document.getElementById('toggleModeLink');
+  $('loginForm').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const u = $('username').value.trim();
+    const p = $('password').value;
+    if (AUTH.login(u, p)) {
+      const next = new URLSearchParams(location.search).get('next');
+      location.href = next && /^[\w.-]+\.html/.test(next) ? next : 'index.html';
+    } else {
+      $('loginError').innerHTML = `<div class="banner banner-danger" style="margin-top:6px;">Incorrect username or password.</div>`;
+    }
+  });
+} else {
+  // ---- Firebase configured: real accounts only ----
+  $('cloudSection').hidden = false;
+  const trialDays = SUBSCRIPTION_CONFIG.TRIAL_DAYS;
+  let mode = 'signin';
+  const cloudErr = $('cloudLoginError');
+  const submitBtn = $('cloudSubmitBtn');
 
   function setMode(m) {
     mode = m;
-    submitBtn.textContent = m === 'signin' ? 'Sign in' : 'Create account';
-    toggleLink.textContent = m === 'signin' ? 'Need an account? Sign up' : 'Have an account? Sign in';
+    $('cloudHeading').textContent = m === 'signin' ? 'Sign in' : 'Create your account';
+    $('cloudSub').textContent = m === 'signin' ? 'Access your assessments, permits and checklists.' : `Start a free ${trialDays}-day trial — full access, no card required.`;
+    submitBtn.textContent = m === 'signin' ? 'Sign in' : 'Create account & start trial';
+    $('toggleModeLink').textContent = m === 'signin' ? 'New here? Create an account' : 'Have an account? Sign in';
+    $('trialNote').textContent = m === 'signin' ? '' : `After the ${trialDays}-day trial, a subscription is required. Manage or cancel anytime in Google Play.`;
     cloudErr.innerHTML = '';
   }
-  toggleLink.addEventListener('click', (e) => { e.preventDefault(); setMode(mode === 'signin' ? 'signup' : 'signin'); });
+  setMode('signin');
 
-  document.getElementById('forgotPasswordLink').addEventListener('click', async (e) => {
+  $('toggleModeLink').addEventListener('click', (e) => { e.preventDefault(); setMode(mode === 'signin' ? 'signup' : 'signin'); });
+
+  $('forgotPasswordLink').addEventListener('click', async (e) => {
     e.preventDefault();
-    const email = document.getElementById('cloudEmail').value.trim();
-    if (!email) { cloudErr.innerHTML = `<div class="banner banner-warn" style="margin-top:6px;">Enter your email above first, then tap "Forgot password?".</div>`; return; }
-    try {
-      await CloudAuth.resetPassword(email);
-      cloudErr.innerHTML = `<div class="banner banner-ok" style="margin-top:6px;">Password reset email sent to ${email}.</div>`;
-    } catch (err) {
-      cloudErr.innerHTML = `<div class="banner banner-danger" style="margin-top:6px;">${err.message}</div>`;
-    }
+    const email = $('cloudEmail').value.trim();
+    if (!email) { cloudErr.innerHTML = `<div class="banner banner-warn" style="margin-top:6px;">Enter your email above first.</div>`; return; }
+    try { await CloudAuth.resetPassword(email); cloudErr.innerHTML = `<div class="banner banner-ok" style="margin-top:6px;">Password reset email sent to ${email}.</div>`; }
+    catch (err) { cloudErr.innerHTML = `<div class="banner banner-danger" style="margin-top:6px;">${err.message}</div>`; }
   });
 
-  document.getElementById('cloudLoginForm').addEventListener('submit', async (e) => {
+  $('cloudLoginForm').addEventListener('submit', async (e) => {
     e.preventDefault();
-    const email = document.getElementById('cloudEmail').value.trim();
-    const password = document.getElementById('cloudPassword').value;
+    const email = $('cloudEmail').value.trim();
+    const password = $('cloudPassword').value;
     cloudErr.innerHTML = '';
     submitBtn.disabled = true;
     submitBtn.textContent = 'Please wait…';
     try {
       if (mode === 'signup') await CloudAuth.signUp(email, password);
       else await CloudAuth.signIn(email, password);
-      // CloudAuth flips the same session flag requireAuth() checks.
-      if (typeof AUTH !== 'undefined') sessionStorage.setItem(AUTH.SESSION_KEY, '1');
-      const next = new URLSearchParams(location.search).get('next');
-      location.href = next || 'index.html';
+      // Don't hard-redirect here — Access.handleLoginPage()'s watcher routes to
+      // the app (if entitled) or the paywall (if the trial has ended).
+      submitBtn.textContent = 'Signing in…';
     } catch (err) {
       cloudErr.innerHTML = `<div class="banner banner-danger" style="margin-top:6px;">${err.message || 'Sign-in failed.'}</div>`;
       submitBtn.disabled = false;
       setMode(mode);
     }
   });
+
+  // If already signed in, route straight to the app or the paywall.
+  Access.handleLoginPage(function () { /* onReady: stay on the form */ });
 }
 </script>
 <script src="js/pwa.js"></script>

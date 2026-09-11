@@ -13,7 +13,7 @@
 // Bump CACHE_VERSION on every deployment (it must match APP_VERSION in
 // js/app-version.js — see the note there).
 
-const CACHE_VERSION = 'v1.3.1';
+const CACHE_VERSION = 'v1.4.0';
 const CACHE_NAME = `cla-${CACHE_VERSION}`;
 const OFFLINE_URL = 'offline.html';
 
@@ -39,6 +39,8 @@ const PRECACHE_URLS = [
   'about.html',
   'checklist.html',
   'checklists.html',
+  'subscribe.html',
+  'admin.html',
   'offline.html',
   'manifest.webmanifest',
   'css/styles.css',
@@ -60,6 +62,11 @@ const PRECACHE_URLS = [
   'js/checklist-data.js',
   'js/checklist.js',
   'js/mailer.js',
+  'js/subscription-config.js',
+  'js/entitlements.js',
+  'js/access.js',
+  'js/billing.js',
+  'js/admin.js',
   'js/photo.js',
   'js/certificate-storage.js',
   'js/certificate-report.js',

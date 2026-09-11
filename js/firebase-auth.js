@@ -26,11 +26,12 @@ const CloudAuth = {
   async signUp(email, password) {
     const auth = await this._auth();
     const cred = await auth.createUserWithEmailAndPassword(email, password);
-    await firebase.firestore().collection('users').doc(cred.user.uid).set({
-      email,
-      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-      subscriptionStatus: 'trial' // see README/functions/index.js for how this gets updated from a real Play purchase
-    }, { merge: true });
+    // NOTE: do NOT write the user's Firestore doc here. The onUserCreate Cloud
+    // Function (functions/index.js) creates it with the email, role, and the
+    // server-set trial window — and the Firestore rules now forbid a client from
+    // writing any entitlement field (subscriptionStatus, trialEndsAt, …), so a
+    // client-side write of those would be rejected. Trying to set them here is
+    // both unnecessary and would make signup fail.
     localStorage.setItem(this.USED_CLOUD_FLAG, '1');
     return cred.user;
   },
