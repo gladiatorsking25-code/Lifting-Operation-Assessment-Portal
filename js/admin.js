@@ -17,7 +17,7 @@
       .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
   }
   function fmt(ms) { return ms ? new Date(Number(ms)).toLocaleDateString() : '—'; }
-  function fns() { return firebase.functions(); }
+  function fns() { return SheetsBackend.functions(); }
 
   function stateOf(u) {
     // Reuse the same entitlement logic the app uses, for a consistent label.
@@ -122,8 +122,8 @@
   }
 
   // ---- boot ----
-  if (!Access.firebaseOn()) {
-    $('adminGate').innerHTML = '<div class="banner banner-warn"><div><strong>Backend not configured.</strong> The admin dashboard manages real subscriptions once Firebase is set up (see SECURITY.md). Nothing to manage yet.</div></div>';
+  if (!Access.sheetsOn()) {
+    $('adminGate').innerHTML = '<div class="banner banner-warn"><div><strong>Backend not configured.</strong> The admin dashboard manages real subscriptions once Google Sheets is set up (see SECURITY.md). Nothing to manage yet.</div></div>';
     return;
   }
   Access.handleAdminPage((ctx) => {

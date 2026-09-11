@@ -1,26 +1,9 @@
-// access.js — the single gate that every protected page calls instead of the
-// old requireAuth(). It has two completely separate modes:
-//
-//   • Firebase NOT configured (today): it simply delegates to the legacy local
-//     sign-in gate in js/auth.js. Behaviour is byte-for-byte what it was before
-//     this file existed, so the app is not changed or bricked before you set up
-//     Firebase.
-//
-//   • Firebase configured: real accounts only. A valid Firebase session is
-//     required, AND the account must currently have access (trial running,
-//     paid subscription, admin grant, or admin role). Trial-ended / unpaid
-//     users are sent to the paywall; signed-out users to login.
-//
-// Enforcement of DATA is always the Firestore rules on Google's servers — this
-// gate is the UX layer that routes people to the right screen. The two together
-// are what "real security" means here: the rules can't be bypassed from
-// devtools, and the gate can't be tricked into granting data it isn't allowed.
-
+// Shared sign-in and subscription routing for the Google Sheets backend.
 (function (global) {
   'use strict';
 
-  function firebaseOn() {
-    return typeof FIREBASE_READY !== 'undefined' && FIREBASE_READY;
+  function sheetsOn() {
+    return typeof SHEETS_READY !== 'undefined' && SHEETS_READY;
   }
   function cfg() {
     return (typeof SUBSCRIPTION_CONFIG !== 'undefined') ? SUBSCRIPTION_CONFIG : {
@@ -38,7 +21,7 @@
 
   // ---- The gate for ordinary protected pages -------------------------------
   function requireAccess() {
-    if (!firebaseOn()) {
+    if (!sheetsOn()) {
       if (typeof requireAuth === 'function') requireAuth();
       return;
     }
@@ -64,7 +47,7 @@
 
   // ---- Helper for login.html: if already signed in AND has access, leave ----
   function handleLoginPage(onReady) {
-    if (!firebaseOn()) { if (onReady) onReady('local'); return; }
+    if (!sheetsOn()) { if (onReady) onReady('local'); return; }
     armAuthWatch(function (user, access) {
       if (user && access && access.hasAccess) {
         const next = new URLSearchParams(location.search).get('next');
@@ -72,14 +55,14 @@
       } else if (user && access && !access.hasAccess) {
         go(cfg().PAYWALL_PAGE);
       } else if (onReady) {
-        onReady('firebase');
+        onReady('sheets');
       }
     });
   }
 
   // ---- Helper for subscribe.html (paywall): require sign-in; leave if OK ----
   function handlePaywallPage(cb) {
-    if (!firebaseOn()) { if (cb) cb({ configured: false }); return; }
+    if (!sheetsOn()) { if (cb) cb({ configured: false }); return; }
     if (!cloudSignedIn()) { go(cfg().LOGIN_PAGE + '?next=' + enc(cfg().PAYWALL_PAGE)); return; }
     armAuthWatch(function (user, access, doc) {
       if (!user) { go(cfg().LOGIN_PAGE + '?next=' + enc(cfg().PAYWALL_PAGE)); return; }
@@ -93,7 +76,7 @@
 
   // ---- Helper for admin.html: require sign-in AND admin role ----------------
   function handleAdminPage(cb) {
-    if (!firebaseOn()) { if (cb) cb({ configured: false }); return; }
+    if (!sheetsOn()) { if (cb) cb({ configured: false }); return; }
     if (!cloudSignedIn()) { go(cfg().LOGIN_PAGE + '?next=' + enc(cfg().ADMIN_PAGE)); return; }
     armAuthWatch(function (user, access, doc) {
       if (!user) { go(cfg().LOGIN_PAGE + '?next=' + enc(cfg().ADMIN_PAGE)); return; }
@@ -102,12 +85,12 @@
     });
   }
 
-  // ---- Shared Firebase auth + entitlement watcher --------------------------
+  // ---- Shared Google Sheets auth + entitlement watcher --------------------------
   // Wires one onAuthStateChanged and, per signed-in user, one entitlement
   // snapshot listener. Calls cb(user, access, doc) on every meaningful change.
   let _armed = false;
   function armAuthWatch(cb) {
-    firebaseReadyPromise.then(function (fb) {
+    sheetsReadyPromise.then(function (fb) {
       if (!fb) { cb(null, null, null); return; }
       fb.auth().onAuthStateChanged(function (user) {
         if (!user) {
@@ -130,7 +113,7 @@
   }
 
   async function signOut() {
-    try { if (typeof CloudAuth !== 'undefined') await CloudAuth.signOutCloud(); } catch (e) { /* ignore */ }
+    try { if (typeof CloudAuth !== 'undefined') await CloudAuth.signOutCloud(); } catch (e) { alert('Sign out could not reach the server. Please retry when connected.'); return; }
     try { if (typeof AUTH !== 'undefined') AUTH.logout(); } catch (e) { /* ignore */ }
     Entitlements.clearCache();
     try { localStorage.removeItem('cla_cloud_signed_in'); } catch (e) {}
@@ -139,7 +122,7 @@
 
   global.requireAccess = requireAccess;
   global.Access = {
-    firebaseOn: firebaseOn,
+    sheetsOn: sheetsOn,
     requireAccess: requireAccess,
     handleLoginPage: handleLoginPage,
     handlePaywallPage: handlePaywallPage,

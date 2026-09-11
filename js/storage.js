@@ -32,9 +32,9 @@ const DB = {
     }
   },
 
-  // Fire-and-forget hooks into js/cloud-sync.js. Both are no-ops unless
-  // Firebase has been configured (see js/firebase-config.js) and the user is
-  // signed in with a real (Firebase) account — the app behaves exactly as it
+  // Fire-and-forget hooks into js/sheets-sync.js. Both are no-ops unless
+  // Google Sheets has been configured (see js/sheets-config.js) and the user is
+  // signed in with a real (Google Sheets) account — the app behaves exactly as it
   // did before cloud sync existed until then. Wrapped defensively so a
   // missing/unloaded CloudSync never breaks a plain local save.
   _cloudPush(collectionName, record) {
@@ -131,10 +131,12 @@ const DB = {
   // `|| []` keeps those files importable, and a merge of an old backup leaves
   // any checklists already on this device alone.
   importAll(data, mode = 'merge') {
+    const before = { assessments: this.getAssessments(), permits: this.getPermits(), checklists: this.getChecklists() };
     if (mode === 'replace') {
       this._set(this.KEYS.assessments, data.assessments || []);
       this._set(this.KEYS.permits, data.permits || []);
       this._set(this.KEYS.checklists, data.checklists || []);
+      this._syncImported(before, true);
       return;
     }
     const existingA = this.getAssessments();
@@ -149,6 +151,15 @@ const DB = {
     this._set(this.KEYS.assessments, existingA);
     this._set(this.KEYS.permits, existingP);
     this._set(this.KEYS.checklists, existingC);
+    this._syncImported(before, false);
+  },
+  _syncImported(before, replace) {
+    for (const collection of ['assessments', 'permits', 'checklists']) {
+      const records = this._get(this.KEYS[collection]);
+      const ids = new Set(records.map(r => r.id));
+      if (replace) for (const old of before[collection]) if (!ids.has(old.id)) this._cloudRemove(collection, old.id);
+      for (const record of records) this._cloudPush(collection, record);
+    }
   }
 };
 

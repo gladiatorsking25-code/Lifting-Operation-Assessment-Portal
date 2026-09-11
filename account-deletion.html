@@ -44,16 +44,14 @@
       <div class="section-title" style="margin-top:0;">What data exists, and where</div>
       <div class="card">
         <table class="spec-table">
-          <tr><td>Lift assessments, permits, signatures, names, notes, equipment checklists</td><td>Stored on your own device only (browser <code>localStorage</code>)</td></tr>
+          <tr><td>Lift assessments, permits, signatures, names, notes, equipment checklists</td><td>Stored on your device and synced to the private Google Sheet</td></tr>
           <tr><td>Certificate photos attached to checklists</td><td>Stored on your own device only (browser <code>IndexedDB</code>)</td></tr>
-          <tr><td>Sign-in state for the app's access gate</td><td>Your device only (<code>sessionStorage</code>)</td></tr>
+          <tr><td>Sign-in state for the app's access gate</td><td>Browser session cookie and server-side session verification record</td></tr>
           <tr><td>Terms / Privacy acceptance record</td><td>Your device only</td></tr>
-          <tr><td>Cloud account &amp; synced records</td><td>Only if you created a cloud account — see option 3</td></tr>
+          <tr><td>Cloud account &amp; synced records</td><td>Stored in the private Google Sheet — see option 3</td></tr>
         </table>
         <p class="hint" style="margin-top:10px;">
-          The standard build has no server. If you never created a cloud account, deleting the
-          app or clearing its data removes everything, and there is nothing held about you
-          anywhere else.
+          Clearing this device removes its local copies, cached files and queued changes. It does not erase the Google Sheet account or synced records. Request server-side deletion using option 3.
         </p>
       </div>
 
@@ -84,7 +82,7 @@
       <div class="section-title">Option 3 — Delete a cloud account and its synced records</div>
       <div class="card">
         <p style="margin-top:0; color:var(--ink-soft); font-size:13.5px;">
-          Only relevant if you signed up for the optional cloud-sync account. To request deletion
+          To request deletion of your Google Sheets portal account and synced data
           of the account and every record synced to it, email the address below from the address
           the account is registered to, with the subject <strong>"Delete my account and data"</strong>:
         </p>

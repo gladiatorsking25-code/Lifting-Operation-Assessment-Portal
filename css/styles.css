@@ -406,6 +406,12 @@ body.printing-modal #lightboxRoot .modal {
 .nav-sub-line a { color: var(--amber); font-weight: 700; text-decoration: none; }
 .nav-sub-line a:hover { text-decoration: underline; }
 
+/* ---------- Offline payment (paywall) ---------- */
+.pay-offline { margin-top: 16px; border-top: 1px solid var(--line); padding-top: 14px; }
+.pay-offline summary { cursor: pointer; font-weight: 600; font-size: 13.5px; color: var(--navy-700); list-style-position: inside; }
+.pay-offline summary:hover { text-decoration: underline; }
+.pay-offline[open] summary { margin-bottom: 8px; }
+
 /* ---------- Admin dashboard row actions ---------- */
 .admin-actions { display: flex; flex-wrap: wrap; gap: 5px; }
 .admin-actions .btn { padding: 4px 8px; font-size: 11.5px; }

@@ -42,7 +42,7 @@ const Billing = (function () {
   // server could not confirm the purchase), or 'error'.
   async function subscribe(productId) {
     if (!available()) { const e = new Error('Play Billing is only available in the Android app.'); e.code = 'unavailable'; throw e; }
-    if (typeof FIREBASE_READY === 'undefined' || !FIREBASE_READY) { const e = new Error('Backend not configured.'); e.code = 'unavailable'; throw e; }
+    if (typeof SHEETS_READY === 'undefined' || !SHEETS_READY) { const e = new Error('Backend not configured.'); e.code = 'unavailable'; throw e; }
 
     let response;
     try {
@@ -58,16 +58,15 @@ const Billing = (function () {
 
     const purchaseToken = response.details && (response.details.purchaseToken || (response.details.token));
     try {
-      await firebaseReadyPromise;
-      const verify = firebase.functions().httpsCallable('verifyPlayPurchase');
+      await sheetsReadyPromise;
+      const verify = SheetsBackend.functions().httpsCallable('verifyPlayPurchase');
       const result = await verify({
         packageName: SUBSCRIPTION_CONFIG.PLAY_PACKAGE_NAME,
         subscriptionId: productId,
         purchaseToken: purchaseToken
       });
       await response.complete('success');
-      // Acknowledge to Play so the purchase isn't auto-refunded after 3 days.
-      try { const svc = await service(); if (svc && svc.acknowledge) await svc.acknowledge(purchaseToken, 'onetime'); } catch (e) { /* subs may be acked server-side */ }
+      // The server acknowledges the verified subscription before returning success.
       return result.data;
     } catch (e) {
       try { await response.complete('fail'); } catch (_) {}
@@ -84,8 +83,8 @@ const Billing = (function () {
     let purchases = [];
     try { purchases = await svc.listPurchases(); } catch (e) { return { restored: 0 }; }
     let restored = 0;
-    await firebaseReadyPromise;
-    const verify = firebase.functions().httpsCallable('verifyPlayPurchase');
+    await sheetsReadyPromise;
+    const verify = SheetsBackend.functions().httpsCallable('verifyPlayPurchase');
     for (const p of purchases) {
       try {
         await verify({ packageName: SUBSCRIPTION_CONFIG.PLAY_PACKAGE_NAME, subscriptionId: p.itemId, purchaseToken: p.purchaseToken });

@@ -6,9 +6,9 @@
 <title>Sign in · Crane Lifting Assessment</title>
 <link rel="stylesheet" href="css/styles.css">
 <script src="js/auth.js"></script>
-<script src="js/firebase-config.js"></script>
-<script src="js/firebase-init.js"></script>
-<script src="js/firebase-auth.js"></script>
+<script src="js/sheets-config.js"></script>
+<script src="js/sheets-client.js"></script>
+<script src="js/sheets-auth.js"></script>
 <!-- Installable-app / PWA metadata (see manifest.webmanifest, sw.js, js/pwa.js) -->
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#16283a">
@@ -37,7 +37,7 @@
       </div>
     </div>
 
-    <!-- ===== Real accounts (shown when Firebase is configured) ===== -->
+    <!-- ===== Real accounts (shown when Google Sheets is configured) ===== -->
     <div id="cloudSection" hidden>
       <h2 id="cloudHeading" style="margin:0 0 4px; font-size:18px;">Sign in</h2>
       <p class="hint" id="cloudSub" style="margin-bottom:16px;"></p>
@@ -48,7 +48,7 @@
         </div>
         <div class="field">
           <label for="cloudPassword">Password</label>
-          <input type="password" id="cloudPassword" autocomplete="current-password" required minlength="6">
+          <input type="password" id="cloudPassword" autocomplete="current-password" required minlength="12" maxlength="128">
         </div>
         <div id="cloudLoginError"></div>
         <button class="btn btn-primary" type="submit" style="width:100%; margin-top:8px;" id="cloudSubmitBtn">Sign in</button>
@@ -60,11 +60,11 @@
       <p class="hint" id="trialNote" style="margin-top:12px;"></p>
     </div>
 
-    <!-- ===== Legacy local gate (shown only until Firebase is configured) ===== -->
+    <!-- ===== Legacy local gate (shown only until Google Sheets is configured) ===== -->
     <div id="localSection" hidden>
       <div class="banner banner-warn" style="margin-bottom:18px;">
         <svg width="16" height="16" viewBox="0 0 24 24"><path d="M12 2L1 21h22L12 2z" stroke="currentColor" stroke-width="1.6" fill="none"/><path d="M12 9v5M12 17h.01" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-        <div><strong>Local trial gate.</strong> This is a simple offline access gate, not real security. Real accounts activate automatically once Firebase is configured (see SECURITY.md).</div>
+        <div><strong>Local trial gate.</strong> This is a simple offline access gate, not real security. Real accounts activate automatically once Google Sheets is configured (see SECURITY.md).</div>
       </div>
       <form id="loginForm">
         <div class="field">
@@ -88,10 +88,10 @@
 <script>
 renderFooter('app-footer');
 const $ = (id) => document.getElementById(id);
-const FB_ON = typeof FIREBASE_READY !== 'undefined' && FIREBASE_READY;
+const FB_ON = typeof SHEETS_READY !== 'undefined' && SHEETS_READY;
 
 if (!FB_ON) {
-  // ---- Firebase not configured: legacy local gate, unchanged behaviour ----
+  // ---- Google Sheets not configured: legacy local gate, unchanged behaviour ----
   $('localSection').hidden = false;
   if (AUTH.isLoggedIn()) {
     const p = new URLSearchParams(location.search).get('next');
@@ -109,7 +109,7 @@ if (!FB_ON) {
     }
   });
 } else {
-  // ---- Firebase configured: real accounts only ----
+  // ---- Google Sheets configured: real accounts only ----
   $('cloudSection').hidden = false;
   const trialDays = SUBSCRIPTION_CONFIG.TRIAL_DAYS;
   let mode = 'signin';
@@ -126,6 +126,12 @@ if (!FB_ON) {
     cloudErr.innerHTML = '';
   }
   setMode('signin');
+  if (location.protocol === 'file:') {
+    cloudErr.textContent = 'Open this app through its server. Run START-PORTAL.cmd, then visit http://localhost:3000/login.html. For first-time setup, read START-HERE.txt.';
+    submitBtn.disabled = true;
+    $('toggleModeLink').hidden = true;
+    $('forgotPasswordLink').hidden = true;
+  }
 
   $('toggleModeLink').addEventListener('click', (e) => { e.preventDefault(); setMode(mode === 'signin' ? 'signup' : 'signin'); });
 
@@ -133,8 +139,8 @@ if (!FB_ON) {
     e.preventDefault();
     const email = $('cloudEmail').value.trim();
     if (!email) { cloudErr.innerHTML = `<div class="banner banner-warn" style="margin-top:6px;">Enter your email above first.</div>`; return; }
-    try { await CloudAuth.resetPassword(email); cloudErr.innerHTML = `<div class="banner banner-ok" style="margin-top:6px;">Password reset email sent to ${email}.</div>`; }
-    catch (err) { cloudErr.innerHTML = `<div class="banner banner-danger" style="margin-top:6px;">${err.message}</div>`; }
+    try { await CloudAuth.resetPassword(email); cloudErr.innerHTML = `<div class="banner banner-ok" style="margin-top:6px;">If this account exists, a password reset email has been sent.</div>`; }
+    catch (err) { cloudErr.textContent = err.message; }
   });
 
   $('cloudLoginForm').addEventListener('submit', async (e) => {
@@ -151,9 +157,9 @@ if (!FB_ON) {
       // the app (if entitled) or the paywall (if the trial has ended).
       submitBtn.textContent = 'Signing in…';
     } catch (err) {
-      cloudErr.innerHTML = `<div class="banner banner-danger" style="margin-top:6px;">${err.message || 'Sign-in failed.'}</div>`;
+      cloudErr.textContent = err.message || 'Sign-in failed.';
       submitBtn.disabled = false;
-      setMode(mode);
+      submitBtn.textContent = mode === 'signin' ? 'Sign in' : 'Create account & start trial';
     }
   });
 

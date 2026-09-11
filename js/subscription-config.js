@@ -5,8 +5,8 @@
 // Admin SDK); these values only describe the product, drive the UI, and tell the
 // billing code which Play products to buy.
 //
-// Everything here is dormant until Firebase is configured (js/firebase-config.js)
-// — see SECURITY.md and FIREBASE_SETUP.md for the activation walkthrough.
+// Everything here is dormant until Google Sheets is configured (js/sheets-config.js)
+// — see SECURITY.md and GOOGLE_SHEETS_SETUP.md for the activation walkthrough.
 
 const SUBSCRIPTION_CONFIG = {
 
@@ -21,11 +21,31 @@ const SUBSCRIPTION_CONFIG = {
   // The subscription product IDs you create in Play Console → Monetize →
   // Subscriptions. The billing code (js/billing.js) offers these; the Cloud
   // Function verifies whichever one was purchased.
-  PLAY_PACKAGE_NAME: 'ae.sabiramin.cranelifting', // must match twa-manifest.json packageId
+  PLAY_PACKAGE_NAME: 'Duck.HSE.Portal', // must match twa-manifest.json packageId
   PRODUCTS: [
     { id: 'pro_monthly', label: 'Monthly', period: 'P1M' },
     { id: 'pro_yearly',  label: 'Yearly',  period: 'P1Y' }
   ],
+
+  // ---- Direct / offline payment (invoice, bank transfer, PayPal) ----
+  // IMPORTANT: Google Play requires Play Billing for digital subscriptions sold
+  // inside a Play-distributed app. This offline option is for DIRECT / B2B sales
+  // and app builds distributed OUTSIDE Google Play. Payment is confirmed by you
+  // and access is granted manually from the admin dashboard. Set enabled:false
+  // to hide it (e.g. in the Play Store build) so you stay policy-compliant.
+  OFFLINE_PAYMENT: {
+    enabled: true,
+    payerName: 'SABIR AMIN SHAHID AMIN',
+    paypalEmail: 'sabiriis143@gmail.com',
+    bank: {
+      accountName: 'SABIR AMIN SHAHID AMIN',
+      bankName: 'Commercial Bank of Dubai',
+      iban: 'AE950230000001009935808',
+      accountNumber: '1009935808',
+      swift: 'CBDUAEAD',
+      bankAddress: 'Al Ittihad Street, PO BOX 2668, Dubai, UAE'
+    }
+  },
 
   // ---- Grace / account states ----
   // Statuses that still count as paid access. 'in_grace' is Play's billing grace

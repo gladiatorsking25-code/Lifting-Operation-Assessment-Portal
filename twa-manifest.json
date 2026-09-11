@@ -24,8 +24,8 @@
   "iconUrl": "https://HOST_DOMAIN/assets/icons/icon-512.png",
   "maskableIconUrl": "https://HOST_DOMAIN/assets/icons/icon-maskable-512.png",
   "splashScreenFadeOutDuration": 300,
-  "appVersionName": "1.4.0",
-  "appVersionCode": 6,
+  "appVersionName": "1.4.1-sheets",
+  "appVersionCode": 7,
   "shortcuts": [
     {
       "name": "New assessment",

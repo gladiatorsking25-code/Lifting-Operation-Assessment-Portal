@@ -1,29 +1,13 @@
-// entitlements.js — decides whether the signed-in user currently has access.
-//
-// The rule the whole app follows: ACCESS IS SERVER-TRUTH. The only source of an
-// entitlement is the `users/{uid}` document in Firestore, and the client can
-// only READ it — Firestore rules forbid the client from writing any of the
-// entitlement fields (subscriptionStatus, trialEndsAt, adminGrantUntil, role).
-// Those are written exclusively by Cloud Functions using the Admin SDK (on
-// account creation, on a verified Play purchase, or on an admin action). So a
-// user cannot unlock the app by editing localStorage or devtools — the gate
-// re-checks against the server document.
-//
-// This module is pure-logic + a thin Firestore reader:
-//   Entitlements.computeAccess(userDoc, nowMs)  -> { state, hasAccess, until }
-//   Entitlements.watch(uid, cb)                 -> live updates from Firestore
-//   Entitlements.current()                      -> last computed access (cached)
-//
-// computeAccess() has no dependencies and is unit-tested in the browser.
-
+// Access is read from the private Sheets server. UI checks never authorize server operations.
 const Entitlements = (function () {
   'use strict';
 
   const CACHE_KEY = 'cla_access_cache'; // {state, hasAccess, until, uid, ts}
   let _current = null;
+  let _currentDoc = null;
   let _unsub = null;
 
-  // The heart of it — a pure function so it can be tested without Firebase.
+  // The heart of it — a pure function so it can be tested without Google Sheets.
   // Order matters: admin role wins, then a manual admin grant, then a paid
   // subscription, then the free trial, else locked.
   function computeAccess(userDoc, nowMs) {
@@ -39,7 +23,8 @@ const Entitlements = (function () {
     //    genuinely locked account always has entitlement fields, so it is never
     //    mistaken for pending.
     const hasEntitlementField = !!(u.role || u.subscriptionStatus || u.trialEndsAt || u.adminGrantUntil || u.compForever);
-    if (!hasEntitlementField) return mk('pending', true, null);
+    if (!hasEntitlementField) return mk('pending', false, null);
+    if (u.subscriptionStatus === 'revoked' && u.role !== 'admin') return mk('locked', false, null);
 
     // 1. Owner / admin — always full access, never gated.
     if (u.role === 'admin') return mk('admin', true, null);
@@ -54,7 +39,7 @@ const Entitlements = (function () {
     const exp = num(u.subscriptionExpiryMillis);
     const status = u.subscriptionStatus || '';
     if (paidStatuses.indexOf(status) !== -1) {
-      if (!exp) return mk('active', true, null);       // active, expiry not yet known
+      if (!exp) return mk('locked', false, null);       // active, expiry not yet known
       if (exp > now) return mk('active', true, exp);   // active and not expired
     }
 
@@ -118,11 +103,12 @@ const Entitlements = (function () {
 
   function _emit(access, doc) {
     _current = access;
+    _currentDoc = doc;
     _cbs.slice().forEach(function (f) { try { f(access, doc); } catch (e) { console.error(e); } });
   }
 
   function watch(uid, cb) {
-    if (typeof FIREBASE_READY === 'undefined' || !FIREBASE_READY) {
+    if (typeof SHEETS_READY === 'undefined' || !SHEETS_READY) {
       const a = mk('unconfigured', true, null); // no backend yet → don't gate
       _current = a; if (cb) cb(a, null);
       return function () {};
@@ -132,22 +118,25 @@ const Entitlements = (function () {
     if (_watchUid !== uid) {
       _watchUid = uid;
       if (_unsub) { try { _unsub(); } catch (e) {} _unsub = null; }
-      firebaseReadyPromise.then(function () {
+      sheetsReadyPromise.then(function () {
         if (_watchUid !== uid) return; // switched again before the SDK was ready
-        _unsub = firebase.firestore().collection('users').doc(uid).onSnapshot(function (snap) {
-          const doc = snap.exists ? snap.data() : {};
-          const access = computeAccess(doc, Date.now());
-          writeCache(access, uid);
-          _emit(access, doc);
-        }, function (err) {
-          console.error('Entitlement watch failed', err);
-          // Fall back to the cached value rather than locking someone out over a
-          // transient network problem.
-          _emit(cachedAccess(uid) || mk('unknown', true, null), null);
-        });
+        let stopped = false;
+        async function refresh() {
+          try {
+            const { user: doc } = await SheetsBackend.call('me');
+            if (stopped || _watchUid !== uid) return;
+            const access = computeAccess(doc, Date.now());
+            writeCache(access, uid); _emit(access, doc);
+          } catch (err) {
+            if (!stopped && _watchUid === uid) _emit(mk('unavailable', false, null), null);
+          }
+        }
+        refresh();
+        const timer = setInterval(refresh, SHEETS_CONFIG.pollMillis);
+        _unsub = () => { stopped = true; clearInterval(timer); };
       });
     } else if (cb && _current) {
-      try { cb(_current, null); } catch (e) {} // deliver the current value at once
+      try { cb(_current, _currentDoc); } catch (e) {} // deliver the current value at once
     }
     return function () { _cbs = _cbs.filter(function (f) { return f !== cb; }); };
   }
@@ -156,6 +145,8 @@ const Entitlements = (function () {
     if (_unsub) { try { _unsub(); } catch (e) { /* ignore */ } _unsub = null; }
     _cbs = [];
     _watchUid = null;
+    _current = null;
+    _currentDoc = null;
   }
 
   function current() { return _current; }
