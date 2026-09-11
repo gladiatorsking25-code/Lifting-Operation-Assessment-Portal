@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "93471036351",
+    "project_id": "duck-hse-portal",
+    "storage_bucket": "duck-hse-portal.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:93471036351:android:7ba3b594dc828c40b9470a",
+        "android_client_info": {
+          "package_name": "Duck.HSE.Portal"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "93471036351-fe5t1q66phe8qoatd8l7vqchc8lpd0ko.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCUpp7yLaAtINsVKal1C8PL8LanxpE1uEI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "93471036351-fe5t1q66phe8qoatd8l7vqchc8lpd0ko.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

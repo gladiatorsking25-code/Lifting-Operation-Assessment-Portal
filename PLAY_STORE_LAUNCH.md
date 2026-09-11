@@ -1,9 +1,3 @@
-# Google Sheets update
-
-This build uses the private Google Sheets backend. Start with [GOOGLE_SHEETS_SETUP.md](GOOGLE_SHEETS_SETUP.md). Firebase and local-password setup in the historical notes below is obsolete. Deployment and data-safety declarations must reflect the new server and sheet.
-
----
-
 # Launching on Google Play — the cheapest route that still holds up under UAE law
 
 > **Not legal, tax, or insurance advice.** I'm not a lawyer and this isn't a
@@ -197,7 +191,7 @@ Put the disclaimer high. It sets expectations with users and it is evidence of
 reasonable care if anything ever goes wrong:
 
 ```
-Crane Lifting Assessment is a planning aid for lifting operations: check a load
+Duck HSE Portal is a planning aid for lifting operations: check a load
 against the manufacturer's load chart, generate a lift diagram and pre-lift
 briefing, set a starting exclusion zone, and raise a permit to work — all
 offline, on site, with no signal needed.

@@ -1,9 +1,3 @@
-# Google Sheets update
-
-This build uses the private Google Sheets backend. Start with [GOOGLE_SHEETS_SETUP.md](GOOGLE_SHEETS_SETUP.md). Firebase and local-password setup in the historical notes below is obsolete. Deployment and data-safety declarations must reflect the new server and sheet.
-
----
-
 # Google Play — Data Safety form answers
 
 This is a fill-in-the-blanks guide for the Data safety section in Play Console

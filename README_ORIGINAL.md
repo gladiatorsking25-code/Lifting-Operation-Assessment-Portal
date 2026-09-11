@@ -1,4 +1,4 @@
-# Crane Lifting Assessment — Web App
+# Duck HSE Portal — Web App
 
 A browser-based rebuild of the original WinForms crane lifting assessment tool, for
 daily lift assessments, permit-to-work management, and record keeping — no install,

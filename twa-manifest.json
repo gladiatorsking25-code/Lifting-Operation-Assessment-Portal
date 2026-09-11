@@ -6,10 +6,10 @@
     "See PLAY_STORE_LAUNCH.md for the full walkthrough.",
     "packageId and signingKey can never change once published — get them right first."
   ],
-  "packageId": "ae.sabiramin.cranelifting",
+  "packageId": "Duck.HSE.Portal",
   "host": "HOST_DOMAIN",
-  "name": "Crane Lifting Assessment",
-  "launcherName": "Lift Assess",
+  "name": "Duck HSE Portal",
+  "launcherName": "Duck HSE",
   "display": "standalone",
   "orientation": "any",
   "themeColor": "#16283a",
@@ -24,7 +24,7 @@
   "iconUrl": "https://HOST_DOMAIN/assets/icons/icon-512.png",
   "maskableIconUrl": "https://HOST_DOMAIN/assets/icons/icon-maskable-512.png",
   "splashScreenFadeOutDuration": 300,
-  "appVersionName": "1.4.1-sheets",
+  "appVersionName": "1.5.0",
   "appVersionCode": 7,
   "shortcuts": [
     {
@@ -58,7 +58,7 @@
   "isMetaQuest": false,
   "fullScopeUrl": "https://HOST_DOMAIN/",
   "minSdkVersion": 21,
-  "appVersion": "1.4.0",
+  "appVersion": "1.5.0",
   "signingKey": {
     "path": "./android.keystore",
     "alias": "android"

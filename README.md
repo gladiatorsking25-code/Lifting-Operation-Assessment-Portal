@@ -1,10 +1,4 @@
-# Google Sheets update
-
-This build uses the private Google Sheets backend. Start with [GOOGLE_SHEETS_SETUP.md](GOOGLE_SHEETS_SETUP.md). Firebase and local-password setup in the historical notes below is obsolete. Deployment and data-safety declarations must reflect the new server and sheet.
-
----
-
-# Crane Lifting Assessment — Web App
+# Duck HSE Portal — Web App
 
 A browser-based rebuild of the original WinForms crane lifting assessment tool, for
 daily lift assessments, permit-to-work management, and record keeping — no install,
@@ -14,6 +8,23 @@ runs from any browser, deployable free on GitHub Pages.
 > Developed by **Sabir Amin** — sabiriis143@gmail.com — +971 55 362 3535.
 
 ## Changelog
+
+- **Rebrand to "Duck HSE Portal", Firebase activated, direct-payment option (v1.5.0)**:
+  the app is renamed throughout (titles, manifest, TWA, sidebar/login brand) with a
+  new **funny-duck** icon set (`assets/icons/*`, regenerated), and the live
+  `duck-hse-portal` Firebase **web** config is now in `js/firebase-config.js` — so the
+  app runs in **real-accounts mode**. TWA `packageId` and `.well-known/assetlinks.json`
+  are set to `Duck.HSE.Portal` to match the registered Android app.
+  - **Direct / offline payment** added to the paywall (`subscribe.html`): PayPal +
+    Commercial Bank of Dubai transfer details, with a "request activation" mailto. It's
+    for **B2B / non-Play** sales, activated manually from the admin dashboard —
+    configurable via `OFFLINE_PAYMENT` in `js/subscription-config.js`. **Note:** Google
+    Play requires Play Billing for in-app digital subscriptions, so set
+    `OFFLINE_PAYMENT.enabled=false` in the Play build to stay policy-compliant.
+  - **Before sign-in works**, you must finish the backend setup (SECURITY.md §6):
+    enable Email/Password auth, deploy `firestore.rules` and `functions`, and set your
+    own `users/{uid}.role = "admin"`. Until then the app shows the login screen but
+    Firestore reads return `permission-denied` (fail-closed — expected).
 
 - **Real accounts, trial→paid subscriptions & owner control (v1.4.0)**: replaced
   the fake local login with a real-accounts-only model and put subscription control

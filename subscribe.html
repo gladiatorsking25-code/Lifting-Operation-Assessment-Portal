@@ -3,16 +3,16 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Subscribe · Crane Lifting Assessment</title>
+<title>Subscribe · Duck HSE Portal</title>
 <link rel="stylesheet" href="css/styles.css">
 <meta name="theme-color" content="#16283a">
 <meta name="color-scheme" content="light">
 <link rel="icon" href="assets/icons/favicon.ico" sizes="any">
 <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon-180.png">
 <script src="js/auth.js"></script>
-<script src="js/sheets-config.js"></script>
-<script src="js/sheets-client.js"></script>
-<script src="js/sheets-auth.js"></script>
+<script src="js/firebase-config.js"></script>
+<script src="js/firebase-init.js"></script>
+<script src="js/firebase-auth.js"></script>
 <script src="js/app-version.js"></script>
 <script src="js/subscription-config.js"></script>
 <script src="js/entitlements.js"></script>
@@ -29,7 +29,7 @@
     <div id="payStatus" class="hint" style="text-align:center; margin-bottom:16px;"></div>
 
     <div id="paySetup" hidden>
-      <div class="banner banner-warn"><div>Subscriptions are not active yet — the backend (Google Sheets + Play Billing) has not been configured. Once it is, this screen manages the free trial and paid plans. See SECURITY.md.</div></div>
+      <div class="banner banner-warn"><div>Subscriptions are not active yet — the backend (Firebase + Play Billing) has not been configured. Once it is, this screen manages the free trial and paid plans. See SECURITY.md.</div></div>
     </div>
 
     <div id="payPlans"></div>
@@ -37,7 +37,7 @@
     <div id="payOffline"></div>
 
     <div id="payNotInApp" hidden>
-      <div class="banner banner-info"><div>To subscribe, open <strong>Crane Lifting Assessment</strong> from the Google Play app on your Android device. Purchases are handled by Google Play, not inside this web page.</div></div>
+      <div class="banner banner-info"><div>To subscribe, open <strong>Duck HSE Portal</strong> from the Google Play app on your Android device. Purchases are handled by Google Play, not inside this web page.</div></div>
     </div>
 
     <div id="payResult" style="margin-top:12px;"></div>
@@ -66,10 +66,11 @@
   // Direct / offline payment (invoice, bank transfer, PayPal). For B2B and
   // non-Play distribution; access is granted manually from the admin dashboard
   // once payment is confirmed. Hidden entirely if disabled in config.
-  function esc(v){ return String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+  function escOff(v){ return String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
   function renderOffline() {
     const op = cfg.OFFLINE_PAYMENT;
     const host = $('payOffline');
+    if (!host) return;
     if (!op || !op.enabled) { host.innerHTML = ''; return; }
     const b = op.bank || {};
     const activationSubject = encodeURIComponent('Subscription activation request — Duck HSE Portal');
@@ -90,25 +91,26 @@
         <div class="card" style="margin-bottom:10px;">
           <strong>PayPal</strong>
           <div class="hint">Send payment to:</div>
-          <div class="num" style="font-weight:600; margin:4px 0;">${esc(op.paypalEmail)}</div>
+          <div class="num" style="font-weight:600; margin:4px 0;">${escOff(op.paypalEmail)}</div>
           <a class="btn btn-sm btn-primary" href="https://www.paypal.com/" target="_blank" rel="noopener">Open PayPal</a>
         </div>` : ''}
         <div class="card" style="margin-bottom:10px;">
           <strong>Bank transfer</strong>
           <table class="spec-table" style="margin-top:6px;">
-            <tr><td>Account name</td><td>${esc(b.accountName)}</td></tr>
-            <tr><td>Bank</td><td>${esc(b.bankName)}</td></tr>
-            <tr><td>IBAN</td><td class="num">${esc(b.iban)}</td></tr>
-            <tr><td>Account no.</td><td class="num">${esc(b.accountNumber)}</td></tr>
-            <tr><td>SWIFT</td><td class="num">${esc(b.swift)}</td></tr>
-            <tr><td>Bank address</td><td>${esc(b.bankAddress)}</td></tr>
+            <tr><td>Account name</td><td>${escOff(b.accountName)}</td></tr>
+            <tr><td>Bank</td><td>${escOff(b.bankName)}</td></tr>
+            <tr><td>IBAN</td><td class="num">${escOff(b.iban)}</td></tr>
+            <tr><td>Account no.</td><td class="num">${escOff(b.accountNumber)}</td></tr>
+            <tr><td>SWIFT</td><td class="num">${escOff(b.swift)}</td></tr>
+            <tr><td>Bank address</td><td>${escOff(b.bankAddress)}</td></tr>
           </table>
         </div>
-        <a class="btn btn-sm" style="width:100%; justify-content:center;" href="mailto:${esc(cfg.SUPPORT_EMAIL)}?subject=${activationSubject}&body=${activationBody}">I’ve paid — request activation</a>
+        <a class="btn btn-sm" style="width:100%; justify-content:center;" href="mailto:${escOff(cfg.SUPPORT_EMAIL)}?subject=${activationSubject}&body=${activationBody}">I’ve paid — request activation</a>
         <p class="hint" style="margin-top:8px;">Bank transfers can take 1–3 business days to confirm. You’ll get access as soon as payment is verified.</p>
       </details>`;
   }
   renderOffline();
+
   $('payRestore').addEventListener('click', async (e) => {
     e.preventDefault();
     if (!Billing.available()) { $('payResult').innerHTML = '<div class="banner banner-info"><div>Open the Android app to restore purchases.</div></div>'; return; }
@@ -128,7 +130,7 @@
       return `<div class="card" style="margin-bottom:10px; display:flex; align-items:center; justify-content:space-between; gap:10px;">
         <div>
           <strong>${p.label}</strong>
-          <div class="hint">${d && d.title ? d.title : ('Crane Lifting Assessment ' + p.label)}</div>
+          <div class="hint">${d && d.title ? d.title : ('Duck HSE Portal ' + p.label)}</div>
         </div>
         <div style="text-align:right;">
           ${price ? `<div class="num" style="font-weight:600;">${price}</div>` : ''}
@@ -155,7 +157,7 @@
   }
 
   // Not configured yet → preview mode.
-  if (!Access.sheetsOn()) {
+  if (!Access.firebaseOn()) {
     $('paySetup').hidden = false;
     renderPlans(null);
     return;
@@ -170,7 +172,7 @@
       $('payStatus').textContent = `${left} day${left === 1 ? '' : 's'} left. Subscribe now to keep access when the trial ends.`;
     } else {
       $('payTitle').textContent = 'Your free trial has ended';
-      $('payStatus').textContent = 'Subscribe to continue using Crane Lifting Assessment.';
+      $('payStatus').textContent = 'Subscribe to continue using Duck HSE Portal.';
     }
     let details = null;
     try { details = await Billing.getProducts(); } catch (e) { /* not in app */ }

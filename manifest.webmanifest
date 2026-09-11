@@ -1,6 +1,6 @@
 {
-  "name": "Crane Lifting Assessment",
-  "short_name": "Lift Assess",
+  "name": "Duck HSE Portal",
+  "short_name": "Duck HSE",
   "description": "Crane load-chart assessments, lift diagrams, pre-lift briefings and permits to work, aligned with ADOSH-SF CoP 34.0. Planning aid only — it does not replace the manufacturer's certified load chart or an Appointed Person's sign-off.",
   "id": "/crane-lifting-assessment/",
   "start_url": "./index.html",

@@ -10,7 +10,7 @@
      the app. -->
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Privacy Notice · Crane Lifting Assessment</title>
+<title>Privacy Notice · Duck HSE Portal</title>
 <link rel="stylesheet" href="css/styles.css">
 <!-- Installable-app / PWA metadata (see manifest.webmanifest, sw.js, js/pwa.js) -->
 <link rel="manifest" href="manifest.webmanifest">
@@ -19,7 +19,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Lift Assess">
+<meta name="apple-mobile-web-app-title" content="Duck HSE">
 <meta name="description" content="Crane load-chart assessments, lift diagrams, pre-lift briefings and permits to work, aligned with ADOSH-SF CoP 34.0. A planning aid — not a replacement for the certified load chart or an Appointed Person's sign-off.">
 <link rel="icon" href="assets/icons/favicon.ico" sizes="any">
 <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
@@ -64,13 +64,45 @@
       (payment for any paid subscription is handled entirely by Google Play, not by this
       app), precise device location, or advertising identifiers.</p>
 
-      <div class="section-title">2. Where data is stored</div>
-      <p>This build stores assessments, permits and checklists on your device and synchronizes them through the portal server to a private Google Sheet. Synced records can include the names, notes and signatures entered in those records. The portal operator and authorized sheet editors can access them. Certificate images held separately in IndexedDB and fleet preferences remain device-local.</p>
-      <p>Accounts, salted password hashes, session verification records and subscription details are stored in the private sheet. Passwords are sent to the portal server for verification and are not stored as readable text. The browser holds an HttpOnly session cookie. Clearing device data does not delete server or sheet data.</p>
-      <div class="section-title">3. Service providers</div>
-      <p>The portal uses Google Sheets for account and record storage. The configured server host processes requests, and the configured email provider delivers password-reset messages. Google Play verifies purchases made through the Android app. Ask the portal operator for the hosting and email-provider details used in your deployment.</p>
-      <div class="section-title">3a. Storage location</div>
-      <p>Data location depends on the portal host and the Google account's applicable storage arrangements. This build does not guarantee storage in the UAE. Contact the portal operator for the deployment's locations and transfer arrangements before entering data subject to location restrictions.</p>
+      <div class="section-title">2. Where this data is stored today</div>
+      <p>In the current build, all of the data listed above is stored only in your
+      device's browser storage (<code>localStorage</code>), scoped to the page you open
+      the App from. <strong>Nothing is transmitted to any server</strong> — there is no
+      backend in this build. That means:</p>
+      <ul>
+        <li>The developer/operator cannot see, access, or process your data, because it never leaves your device;</li>
+        <li>Data does not sync between your devices automatically;</li>
+        <li>Clearing your browser's site data, or uninstalling the app if wrapped for
+        an app store, deletes this data permanently unless you have exported a backup
+        (see the Fleet & Backup page).</li>
+      </ul>
+
+      <div class="section-title">3. If cloud sync / accounts are added later</div>
+      <p>A paid, multi-device version of this App would need a real backend (for
+      example Firebase or Supabase) to sync data and verify subscriptions. If and when
+      that happens, this notice will be updated to name the specific processor(s) used,
+      where they host data, and the safeguards applied to any cross-border transfer, as
+      required by PDPL Articles 20–24. Until this notice is updated to describe such a
+      backend, no such transfer is taking place.</p>
+
+      <div class="section-title">3a. Cross-border transfer, if and when cloud sync is switched on</div>
+      <p>The optional cloud-sync build uses <strong>Google Firebase</strong> (Firebase
+      Authentication and Cloud Firestore) as a data processor. Firebase does not currently
+      offer a UAE data-region, so enabling cloud sync means personal data you enter is
+      <strong>transferred to and stored outside the UAE</strong> — in whichever Google Cloud
+      region the Firestore database is created in, which is chosen once and cannot be changed
+      afterwards.</p>
+      <p>PDPL Articles 22 and 23 permit such a transfer where the destination has an adequate
+      level of protection recognised by the UAE Data Office, or — failing that — where it is
+      covered by an appropriate contractual safeguard or by your explicit consent after being
+      informed of the risk. The safeguard relied on here is Google's Cloud Data Processing
+      Addendum, together with the consent recorded through the in-app acceptance screen.
+      <strong>If you do not want your data leaving the UAE, do not create a cloud account</strong>
+      — the app is fully functional without one, and local-only data never leaves your device.</p>
+      <p>Before enabling cloud sync commercially, confirm with a UAE-licensed lawyer which
+      Firestore region to choose and whether your specific customers (government or
+      critical-infrastructure clients in particular) are subject to data-localisation
+      requirements stricter than the general PDPL position.</p>
 
       <div class="section-title">3b. Payments and subscriptions</div>
       <p>Any paid subscription is sold and processed entirely by <strong>Google Play
@@ -89,11 +121,14 @@
       <p>Subject to the exceptions PDPL provides, you have the right to: request access
       to personal data concerning you; request correction or erasure of it; restrict or
       object to its processing; request its transfer to another controller (data
-      portability); and withdraw consent at any time. You can edit or delete records in the app and request account or server-data deletion through the operator. Erasing local device data alone does not delete the sheet copy.</p>
+      portability); and withdraw consent at any time. Because this build stores data
+      only on your own device, you can exercise most of these rights directly — edit or
+      delete any record from the History, Permits, or Fleet & Backup pages, or use
+      "Erase all local data" on the Fleet & Backup page to remove everything at once.</p>
 
       <div class="section-title">6. Signatures</div>
       <p>On-screen signatures are stored as images alongside the permit record, in the
-      device storage and the synced permit record in Google Sheets. They are used solely to represent sign-off
+      same local storage as everything else. They are used solely to represent sign-off
       on a permit-to-work document and are not analyzed, shared, or used for any other
       purpose by the App.</p>
 
@@ -111,7 +146,8 @@
       App.</p>
 
       <div class="section-title">9. Changes to this notice</div>
-      <p>This notice will be updated as features change (including changes to synchronization or payment services). The "Last updated" date above will reflect the
+      <p>This notice will be updated as features change (particularly if cloud sync or
+      a payment backend is introduced). The "Last updated" date above will reflect the
       most recent revision.</p>
 
       <div class="section-title">10. Retention — how long data is kept</div>

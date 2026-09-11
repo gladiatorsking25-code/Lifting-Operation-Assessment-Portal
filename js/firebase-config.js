@@ -1,29 +1,27 @@
-// firebase-config.js — fill this in with YOUR OWN Firebase project's config.
+// firebase-config.js — LIVE config for the "duck-hse-portal" Firebase project.
 //
-// Until you do (i.e. while apiKey below is still the placeholder), the app
-// runs exactly as it did before this file existed: local-only storage, the
-// existing username/password login gate, no cloud sync, zero extra network
-// requests. Nothing about the app's current behaviour changes just because
-// this file is present.
+// This is the Firebase *web* app config. These values are public by design (the
+// apiKey is an identifier, not a secret — see SECURITY.md §2); shipping them in
+// the app is expected. Security comes from Firebase Auth + the Firestore rules,
+// not from hiding this.
 //
-// To get real values:
-//   1. Go to https://console.firebase.google.com and create a project
-//      (the free "Spark" plan is enough for a small subscriber base).
-//   2. Build → Authentication → Sign-in method → enable "Email/Password".
-//   3. Build → Firestore Database → Create database (start in production
-//      mode, then apply firestore.rules from this repo — see README).
-//   4. Project settings (gear icon) → General → "Your apps" → Add app → Web
-//      (</> icon). Firebase shows you a config object — paste its values in
-//      below.
-//
-// See the README section "Cloud sync & accounts (Firebase)" for the full
-// walkthrough, including Firestore security rules and cost expectations.
+// Because apiKey is now a real value (not the YOUR_API_KEY placeholder), the app
+// runs in REAL-ACCOUNTS mode: the local Sabir/admin gate is retired and everyone
+// signs in with an email/password account. For sign-in to actually work you must
+// have completed the backend setup in SECURITY.md §6:
+//   1. Authentication → Sign-in method → enable Email/Password.
+//   2. firebase deploy --only firestore:rules
+//   3. firebase deploy --only functions   (creates the trial on signup, verifies
+//      Play purchases, powers the admin dashboard)
+//   4. Firestore → users/<your uid> → set role: "admin"  (makes admin.html yours)
+// Until those are done the app shows the login screen but sign-in will fail.
 
 const FIREBASE_CONFIG = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT.firebaseapp.com",
-  projectId: "YOUR_PROJECT",
-  storageBucket: "YOUR_PROJECT.appspot.com",
-  messagingSenderId: "YOUR_SENDER_ID",
-  appId: "YOUR_APP_ID"
+  apiKey: "AIzaSyAy28UK_MMSjnldl2-FP5Qe9zksVnGc_RM",
+  authDomain: "duck-hse-portal.firebaseapp.com",
+  projectId: "duck-hse-portal",
+  storageBucket: "duck-hse-portal.firebasestorage.app",
+  messagingSenderId: "93471036351",
+  appId: "1:93471036351:web:bc7f453c712df3aab9470a",
+  measurementId: "G-KNS5C5GR9J"
 };

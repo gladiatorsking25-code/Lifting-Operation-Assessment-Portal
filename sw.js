@@ -1,4 +1,4 @@
-// sw.js — service worker for the Crane Lifting Assessment app.
+// sw.js — service worker for the Duck HSE Portal app.
 //
 // Why this exists:
 //   1. **Offline.** The app itself needs no network (everything is localStorage),
@@ -13,7 +13,7 @@
 // Bump CACHE_VERSION on every deployment (it must match APP_VERSION in
 // js/app-version.js — see the note there).
 
-const CACHE_VERSION = 'v1.4.1-sheets';
+const CACHE_VERSION = 'v1.5.0';
 const CACHE_NAME = `cla-${CACHE_VERSION}`;
 const OFFLINE_URL = 'offline.html';
 
@@ -70,10 +70,10 @@ const PRECACHE_URLS = [
   'js/photo.js',
   'js/certificate-storage.js',
   'js/certificate-report.js',
-  'js/sheets-config.js',
-  'js/sheets-client.js',
-  'js/sheets-auth.js',
-  'js/sheets-sync.js',
+  'js/firebase-config.js',
+  'js/firebase-init.js',
+  'js/firebase-auth.js',
+  'js/cloud-sync.js',
   'assets/icons/icon-192.png',
   'assets/icons/icon-512.png',
   'assets/icons/icon-maskable-192.png',
@@ -129,9 +129,8 @@ self.addEventListener('fetch', (event) => {
   if (request.method !== 'GET') return;
 
   const url = new URL(request.url);
-  if (url.pathname.startsWith('/api/')) return;
 
-  // Never touch Google Sheets / Firestore traffic — those must always hit the
+  // Never touch Firebase / Firestore traffic — those must always hit the
   // network and have their own offline persistence.
   if (/firebase|firestore|googleapis\.com\/(identitytoolkit|securetoken)/.test(url.href)) return;
 

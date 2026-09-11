@@ -1,4 +1,4 @@
-# Crane Lifting Assessment — Certificate Management Update v1.3.0
+# Duck HSE Portal — Certificate Management Update v1.3.0
 
 This update adds third-party certificate management to the Equipment Checklist.
 

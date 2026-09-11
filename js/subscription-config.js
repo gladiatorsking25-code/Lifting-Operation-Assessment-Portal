@@ -5,8 +5,8 @@
 // Admin SDK); these values only describe the product, drive the UI, and tell the
 // billing code which Play products to buy.
 //
-// Everything here is dormant until Google Sheets is configured (js/sheets-config.js)
-// — see SECURITY.md and GOOGLE_SHEETS_SETUP.md for the activation walkthrough.
+// Everything here is dormant until Firebase is configured (js/firebase-config.js)
+// — see SECURITY.md and FIREBASE_SETUP.md for the activation walkthrough.
 
 const SUBSCRIPTION_CONFIG = {
 

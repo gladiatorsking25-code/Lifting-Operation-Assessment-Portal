@@ -32,9 +32,9 @@ const DB = {
     }
   },
 
-  // Fire-and-forget hooks into js/sheets-sync.js. Both are no-ops unless
-  // Google Sheets has been configured (see js/sheets-config.js) and the user is
-  // signed in with a real (Google Sheets) account — the app behaves exactly as it
+  // Fire-and-forget hooks into js/cloud-sync.js. Both are no-ops unless
+  // Firebase has been configured (see js/firebase-config.js) and the user is
+  // signed in with a real (Firebase) account — the app behaves exactly as it
   // did before cloud sync existed until then. Wrapped defensively so a
   // missing/unloaded CloudSync never breaks a plain local save.
   _cloudPush(collectionName, record) {
