@@ -9,37 +9,6 @@ runs from any browser, deployable free on GitHub Pages.
 
 ## Changelog
 
-- **Third-party certificate register with photo capture (v1.3.1)**: each equipment
-  checklist can now hold third-party certificates — inspection certificates,
-  operator/rigger/banksman competency certificates, and lifting-accessory
-  certificates — each with a category, holder/item, number, issuer, issue and expiry
-  dates, WLL/SWL, notes, and **photos taken with the device camera** (or chosen from
-  the gallery). New files: `js/photo.js` (camera capture + on-device resize),
-  `js/certificate-storage.js` (photo blobs in IndexedDB), `js/certificate-report.js`
-  (row rendering + a standalone shareable HTML report).
-  - **Storage.** Photos are resized (longest edge 1600 px, JPEG) and stored in
-    **IndexedDB**, keyed to the checklist; the checklist record in `localStorage`
-    keeps only the certificate metadata and photo references, so a record stays a few
-    hundred bytes even with several photos attached. Deleting a checklist, or using
-    "erase all data" / the account-deletion page, now also purges the IndexedDB
-    photos — no orphaned images.
-  - **Expiry awareness.** Each certificate shows a Valid / Expiring ≤30 days /
-    Expired badge, and the section header summarises the counts.
-  - **Forward by Email and WhatsApp.** "Share report" builds a self-contained HTML
-    certificate report (photos embedded) and hands it to the device share sheet, from
-    which the user picks Email or WhatsApp; on a desktop with no share sheet it
-    downloads the report to attach. This is the honest path for WhatsApp, which cannot
-    receive file attachments through a plain link.
-  - **Four languages.** The whole certificate feature — section, buttons, the editor
-    modal, the on-screen report, status badges, share messages, and the generated
-    HTML report (with `dir="rtl"` for Arabic/Urdu) — is translated EN/AR/UR/HI like
-    the rest of the checklist.
-  - Fixes made while wiring this up: the certificate modal was writing into
-    `document.body` (no `#lightboxRoot` on `checklist.html`) and **wiped the whole
-    page** on save/cancel — now fixed; and the app's three version numbers had drifted
-    apart — realigned to 1.3.1 / build 5 across `js/app-version.js`, `sw.js` and
-    `twa-manifest.json`.
-
 - **Multilingual equipment checklists (English / Arabic / Urdu / Hindi)**: a new
   monthly inspection and maintenance checklist for earthmoving machinery and cranes.
   `checklist.html` + `js/checklist.js` (the form), `checklists.html` (saved records),
@@ -351,12 +320,9 @@ js/assessment-detail.js Full saved-assessment record renderer (shared; used by h
 checklist.html          Monthly inspection & maintenance checklist form
 checklists.html         Saved checklist records, colour coded by month
 js/checklist-data.js    Machine types, sections, items, icons, colour schemes — EDIT THIS to add items
-js/checklist.js         Checklist page logic (incl. certificate register)
+js/checklist.js         Checklist page logic
 js/i18n.js              Translation layer + RTL handling + language switcher
 js/mailer.js            Address parsing, randomised draft, .eml / mailto / clipboard
-js/photo.js             Camera capture + on-device image resize (canvas)
-js/certificate-storage.js  Certificate photo blobs in IndexedDB (out of localStorage)
-js/certificate-report.js   Certificate rows + shareable HTML report + Email/WhatsApp share
 terms.html              Terms of Use
 privacy.html            Privacy Notice
 about.html              Version, support, licences, safety scope

@@ -44,7 +44,8 @@
       <div class="section-title" style="margin-top:0;">What data exists, and where</div>
       <div class="card">
         <table class="spec-table">
-          <tr><td>Lift assessments, permits, signatures, names, notes</td><td>Stored on your own device only (browser <code>localStorage</code>)</td></tr>
+          <tr><td>Lift assessments, permits, signatures, names, notes, equipment checklists</td><td>Stored on your own device only (browser <code>localStorage</code>)</td></tr>
+          <tr><td>Certificate photos attached to checklists</td><td>Stored on your own device only (browser <code>IndexedDB</code>)</td></tr>
           <tr><td>Sign-in state for the app's access gate</td><td>Your device only (<code>sessionStorage</code>)</td></tr>
           <tr><td>Terms / Privacy acceptance record</td><td>Your device only</td></tr>
           <tr><td>Cloud account &amp; synced records</td><td>Only if you created a cloud account — see option 3</td></tr>
@@ -140,6 +141,9 @@ document.getElementById('btnWipe').addEventListener('click', async () => {
 
   try { localStorage.clear(); } catch (e) { console.error(e); }
   try { sessionStorage.clear(); } catch (e) { console.error(e); }
+  // Certificate photos are stored in IndexedDB, which localStorage.clear() does
+  // not touch — delete that database so no personal document images remain.
+  try { indexedDB.deleteDatabase('cla_certificate_store_v1'); } catch (e) { console.error(e); }
 
   // Drop the offline cache and unregister the service worker too, so no copy
   // of the app's pages is left behind on the device.

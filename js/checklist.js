@@ -22,6 +22,8 @@
   let editingId = null;
   let sigInspector = null;
   let sigSupervisor = null;
+  let certificates = [];
+  let certificatePhotos = {}; // certId -> [{id, dataUrl, name}] while editing
 
   const $ = (id) => document.getElementById(id);
 
@@ -60,6 +62,19 @@
     return String(v == null ? '' : v)
       .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+
+  // I18n.t with {token} interpolation.
+  function tvar(key, vars) {
+    let s = I18n.t(key);
+    if (vars) Object.keys(vars).forEach(k => { s = s.split('{' + k + '}').join(vars[k]); });
+    return s;
+  }
+  // Translated category label from the English category value stored on a cert.
+  function catLabel(cat) {
+    return (typeof CertificateReport !== 'undefined' && CertificateReport.catLabel)
+      ? CertificateReport.catLabel(cat)
+      : cat;
   }
 
   // ---------------------------------------------------------------------
@@ -277,9 +292,230 @@
   }
 
   // ---------------------------------------------------------------------
+  // Third-party certificate register
+  // ---------------------------------------------------------------------
+  function newCertificate(category) {
+    return {
+      id: 'CERT-' + Date.now() + '-' + Math.floor(Math.random() * 10000),
+      category,
+      title: category === 'Equipment' ? I18n.t('cert.defEquipment') :
+        category === 'Personnel' ? I18n.t('cert.defPersonnel') : I18n.t('cert.defAccessory'),
+      holder: category === 'Personnel' ? ($('operator').value.trim() || '') :
+        category === 'Equipment' ? ($('equipmentType').value || '') : '',
+      number: '', issuer: '', issueDate: '', expiryDate: '', wll: '', notes: '', photos: []
+    };
+  }
+
+  function certificatesForView() {
+    return (certificates || []).map(c => Object.assign({}, c, {
+      photos: (certificatePhotos[c.id] || c.photos || []).map(p => Object.assign({}, p))
+    }));
+  }
+
+  async function renderCertificateSection() {
+    const rows = $('certificateRows');
+    const report = $('certificateReport');
+    if (!rows || !report) return;
+    const safeCerts = certificatesForView();
+    const summary = typeof CertificateReport !== 'undefined' ? CertificateReport.computeSummary(safeCerts) : { total: safeCerts.length, valid: 0, expiring: 0, expired: 0, missing: 0 };
+    $('certificateSummary').textContent = tvar('cert.summaryTpl', { total: summary.total, valid: summary.valid, expiring: summary.expiring, expired: summary.expired });
+    await CertificateReport.render(rows, safeCerts, { editable: true });
+    const photos = await CertificateReport.loadPhotoMap(safeCerts);
+    const fallbackTitle = I18n.t('cert.titleFallback');
+    report.innerHTML = `<div class="certificate-print-header"><strong>${escapeHtml(I18n.t('cert.recordTitle'))}</strong></div>
+      <div class="report-head"><strong>${escapeHtml(I18n.t('cert.complianceSummary'))}</strong>
+        <div class="report-stats">
+          <span class="report-stat">${escapeHtml(I18n.t('cert.headValid'))}: <b>${summary.valid}</b></span>
+          <span class="report-stat">${escapeHtml(I18n.t('cert.headExpiring'))}: <b>${summary.expiring}</b></span>
+          <span class="report-stat">${escapeHtml(I18n.t('cert.headExpired'))}: <b>${summary.expired}</b></span>
+        </div>
+      </div>`;
+    if (safeCerts.length) {
+      safeCerts.forEach(c => {
+        const st = CertificateReport.certStatus(c.expiryDate);
+        const imgHtml = (c.photos || []).map(ph => photos[ph.id] ? `<img class="cert-photo" src="${photos[ph.id]}" alt="${escapeHtml(c.title || fallbackTitle)}">` : '').join('');
+        report.innerHTML += `<div class="card" style="margin-bottom:10px;">
+          <div class="certificate-title"><strong>${escapeHtml(c.title || fallbackTitle)}</strong><span class="badge ${st.key === 'valid' ? 'badge-ok' : st.key === 'expiring' ? 'badge-warn' : 'badge-fail'}"><span class="badge-dot"></span>${escapeHtml(st.label)}</span></div>
+          <div class="certificate-meta">
+            <span><b>${escapeHtml(I18n.t('cert.lCategory'))}:</b> ${escapeHtml(catLabel(c.category) || '—')}</span>
+            <span><b>${escapeHtml(I18n.t('cert.lHolder'))}:</b> ${escapeHtml(c.holder || '—')}</span>
+            <span><b>${escapeHtml(I18n.t('cert.lNumber'))}:</b> ${escapeHtml(c.number || '—')}</span>
+            <span><b>${escapeHtml(I18n.t('cert.lIssuer'))}:</b> ${escapeHtml(c.issuer || '—')}</span>
+            <span><b>${escapeHtml(I18n.t('cert.lIssue'))}:</b> ${escapeHtml(c.issueDate || '—')}</span>
+            <span><b>${escapeHtml(I18n.t('cert.lExpiry'))}:</b> ${escapeHtml(c.expiryDate || '—')}</span>
+            ${c.wll ? `<span><b>WLL/SWL:</b> ${escapeHtml(c.wll)}</span>` : ''}
+          </div>
+          ${c.notes ? `<div class="certificate-notes">${escapeHtml(c.notes)}</div>` : ''}
+          ${imgHtml ? `<div class="certificate-gallery">${imgHtml}</div>` : ''}
+        </div>`;
+      });
+    } else {
+      report.innerHTML += `<div class="certificate-empty">${escapeHtml(I18n.t('cert.reportEmpty'))}</div>`;
+    }
+    rows.querySelectorAll('[data-edit-cert]').forEach(b => b.addEventListener('click', () => openCertificateEditor(b.getAttribute('data-edit-cert'))));
+    rows.querySelectorAll('[data-delete-cert]').forEach(b => b.addEventListener('click', async () => deleteCertificate(b.getAttribute('data-delete-cert'))));
+  }
+
+  async function openCertificateEditor(idOrCategory) {
+    const existing = certificates.find(c => c.id === idOrCategory);
+    const cert = existing || newCertificate(idOrCategory);
+    if (!existing) certificates.push(cert);
+    certificatePhotos[cert.id] = (certificatePhotos[cert.id] || []).slice();
+
+    const root = document.getElementById('lightboxRoot') || document.body;
+    const photos = certificatePhotos[cert.id];
+    for (let i = 0; i < photos.length; i++) {
+      if (photos[i] && !photos[i].dataUrl && photos[i].id) {
+        try {
+          const rec = await CertificateStore.getPhoto(photos[i].id);
+          if (rec && rec.blob) photos[i].dataUrl = await CertificateStore.fileToDataUrl(rec.blob);
+        } catch (e) { console.warn('Could not load certificate photo', photos[i].id, e); }
+      }
+    }
+    root.innerHTML = `<div class="modal-backdrop" id="certModal">
+      <div class="modal" style="max-width:820px;">
+        <div class="modal-head"><strong>${escapeHtml(I18n.t(existing ? 'cert.editTitle' : 'cert.addTitle'))} · ${escapeHtml(catLabel(cert.category))}</strong><button class="close-x" id="certClose">&times;</button></div>
+        <div class="modal-body">
+          <div class="certificate-modal-grid">
+            <div class="field"><label>${escapeHtml(I18n.t('cert.fCategory'))}</label><select id="certCategory">
+              <option value="Equipment">${escapeHtml(I18n.t('cat.equipment'))}</option>
+              <option value="Personnel">${escapeHtml(I18n.t('cat.personnel'))}</option>
+              <option value="Accessory">${escapeHtml(I18n.t('cat.accessory'))}</option>
+            </select></div>
+            <div class="field"><label>${escapeHtml(I18n.t('cert.fTitle'))}</label><input id="certTitle" type="text"></div>
+            <div class="field"><label>${escapeHtml(I18n.t('cert.fHolder'))}</label><input id="certHolder" type="text"></div>
+            <div class="field"><label>${escapeHtml(I18n.t('cert.fNumber'))}</label><input id="certNumber" type="text"></div>
+            <div class="field"><label>${escapeHtml(I18n.t('cert.fIssuer'))}</label><input id="certIssuer" type="text"></div>
+            <div class="field"><label>${escapeHtml(I18n.t('cert.fWll'))}</label><input id="certWll" type="text"></div>
+            <div class="field"><label>${escapeHtml(I18n.t('cert.fIssue'))}</label><input id="certIssue" type="date"></div>
+            <div class="field"><label>${escapeHtml(I18n.t('cert.fExpiry'))}</label><input id="certExpiry" type="date"></div>
+            <div class="field full"><label>${escapeHtml(I18n.t('cert.fNotes'))}</label><textarea id="certNotes" rows="3"></textarea></div>
+            <div class="field full certificate-photo-drop">
+              <label>${escapeHtml(I18n.t('cert.fPhotos'))}</label>
+              <input id="certPhotoInput" type="file" accept="image/*" capture="environment" multiple>
+              <span class="hint">${escapeHtml(I18n.t('cert.photoHint'))}</span>
+              <div class="certificate-photo-list" id="certPhotoList"></div>
+            </div>
+          </div>
+          <div id="certModalResult" style="margin-top:12px;"></div>
+        </div>
+        <div class="modal-foot"><button class="btn btn-primary" id="certSave">${escapeHtml(I18n.t('cert.saveBtn'))}</button><button class="btn" id="certCancel">${escapeHtml(I18n.t('cert.cancel'))}</button></div>
+      </div>
+    </div>`;
+
+    $('certCategory').value = cert.category || 'Equipment';
+    $('certTitle').value = cert.title || '';
+    $('certHolder').value = cert.holder || '';
+    $('certNumber').value = cert.number || '';
+    $('certIssuer').value = cert.issuer || '';
+    $('certWll').value = cert.wll || '';
+    $('certIssue').value = cert.issueDate || '';
+    $('certExpiry').value = cert.expiryDate || '';
+    $('certNotes').value = cert.notes || '';
+
+    function renderEditorPhotos() {
+      const holder = $('certPhotoList');
+      if (!holder) return;
+      holder.innerHTML = photos.length ? photos.map((p, i) => `<div class="certificate-photo-item"><img src="${p.dataUrl || ''}" alt="${escapeHtml(I18n.t('cert.fPhotos'))}"><button type="button" data-photo-index="${i}" title="${escapeHtml(I18n.t('cert.deleteBtn'))}">&times;</button></div>`).join('') : `<span class="hint">${escapeHtml(I18n.t('cert.noPhotos'))}</span>`;
+      holder.querySelectorAll('[data-photo-index]').forEach(b => b.addEventListener('click', () => { photos.splice(Number(b.getAttribute('data-photo-index')), 1); renderEditorPhotos(); }));
+    }
+    renderEditorPhotos();
+
+    $('certPhotoInput').addEventListener('change', async e => {
+      const files = Array.from(e.target.files || []);
+      if (!files.length) return;
+      $('certModalResult').innerHTML = `<div class="banner banner-info"><div>${escapeHtml(I18n.t('cert.processing'))}</div></div>`;
+      let hadError = false;
+      for (const file of files) {
+        try {
+          const dataUrl = await Photo.fileToResizedDataUrl(file);
+          photos.push({ id: 'temp-' + Date.now() + '-' + Math.floor(Math.random()*100000), dataUrl, name: file.name || 'certificate.jpg' });
+        } catch (err) {
+          console.error(err);
+          hadError = true;
+          $('certModalResult').innerHTML = `<div class="banner banner-danger"><div>${escapeHtml(I18n.t('cert.readError'))}</div></div>`;
+        }
+      }
+      e.target.value = '';
+      renderEditorPhotos();
+      if (!hadError) $('certModalResult').innerHTML = '';
+    });
+
+    $('certCategory').addEventListener('change', e => { cert.category = e.target.value; });
+    $('certSave').addEventListener('click', () => {
+      cert.category = $('certCategory').value;
+      cert.title = $('certTitle').value.trim();
+      cert.holder = $('certHolder').value.trim();
+      cert.number = $('certNumber').value.trim();
+      cert.issuer = $('certIssuer').value.trim();
+      cert.wll = $('certWll').value.trim();
+      cert.issueDate = $('certIssue').value;
+      cert.expiryDate = $('certExpiry').value;
+      cert.notes = $('certNotes').value.trim();
+      root.innerHTML = '';
+      renderCertificateSection();
+    });
+    const close = () => { root.innerHTML = ''; if (!existing) certificates = certificates.filter(c => c.id !== cert.id); };
+    $('certClose').addEventListener('click', close);
+    $('certCancel').addEventListener('click', close);
+    $('certModal').addEventListener('click', e => { if (e.target.id === 'certModal') close(); });
+  }
+
+  async function deleteCertificate(id) {
+    const cert = certificates.find(c => c.id === id);
+    if (!cert || !confirm(I18n.t('cert.deleteConfirm'))) return;
+    const ids = (certificatePhotos[id] || cert.photos || []).map(p => p && p.id).filter(Boolean).filter(x => !String(x).startsWith('temp-'));
+    try { await CertificateStore.deleteMany(ids); } catch (e) { console.warn('Could not delete all certificate photos', e); }
+    delete certificatePhotos[id];
+    certificates = certificates.filter(c => c.id !== id);
+    await renderCertificateSection();
+  }
+
+  async function persistCertificatePhotos(recordId) {
+    const clean = [];
+    for (const cert of certificates) {
+      const photos = certificatePhotos[cert.id] || cert.photos || [];
+      const previousIds = (cert.photos || []).map(p => p && p.id).filter(id => id && !String(id).startsWith('temp-'));
+      const storedPhotos = [];
+      for (const p of photos) {
+        if (!p || !p.dataUrl) {
+          if (p && p.id) storedPhotos.push({ id: p.id, name: p.name || 'certificate.jpg' });
+          continue;
+        }
+        let id = p.id && !String(p.id).startsWith('temp-') ? p.id : ('CP-' + Date.now() + '-' + Math.floor(Math.random() * 100000));
+        const blob = Photo.dataUrlToBlob(p.dataUrl);
+        await CertificateStore.putPhoto({ id, checklistId: recordId, certificateId: cert.id, name: p.name || 'certificate.jpg', blob, createdAt: new Date().toISOString() });
+        storedPhotos.push({ id, name: p.name || 'certificate.jpg' });
+      }
+      const retained = new Set(storedPhotos.map(p => p.id));
+      const stale = previousIds.filter(id => !retained.has(id));
+      if (stale.length) {
+        try { await CertificateStore.deleteMany(stale); } catch (e) { console.warn('Could not remove old certificate photos', e); }
+      }
+      clean.push(Object.assign({}, cert, { photos: storedPhotos }));
+    }
+    return clean;
+  }
+
+  async function shareCertificateReport() {
+    try {
+      const rec = buildRecord(certificatesForView());
+      const result = await CertificateReport.share(rec);
+      const msg = result.shared ? I18n.t('cert.sharedMsg') : result.downloaded ? I18n.t('cert.downloadedMsg') : I18n.t('cert.shareCancelled');
+      $('saveConfirm').textContent = msg;
+      $('saveConfirm').className = result.cancelled ? 'banner banner-info' : 'banner banner-ok';
+      setTimeout(() => { $('saveConfirm').textContent = ''; $('saveConfirm').className = ''; }, 6000);
+    } catch (e) {
+      console.error(e);
+      $('saveConfirm').textContent = I18n.t('cert.shareError');
+      $('saveConfirm').className = 'banner banner-danger';
+    }
+  }
+
+  // ---------------------------------------------------------------------
   // Save
   // ---------------------------------------------------------------------
-  function buildRecord() {
+  function buildRecord(certificateList) {
     const f = readFields();
     const counts = computeCounts();
     // Only keep answers for items that actually belong to this equipment type,
@@ -299,11 +535,12 @@
       answers: cleaned,
       counts,
       sigInspector,
-      sigSupervisor
+      sigSupervisor,
+      certificates: Array.isArray(certificateList) ? certificateList : certificates
     });
   }
 
-  function save() {
+  async function save() {
     const f = readFields();
     if (!f.equipmentType) { alert(I18n.t('msg.needType')); $('equipmentType').focus(); return; }
     if (!f.assetNo) { alert(I18n.t('msg.needAsset')); $('assetNo').focus(); return; }
@@ -318,8 +555,16 @@
     sigInspector = padI && padI.toDataUrlSafe ? padI.toDataUrlSafe() : null;
     sigSupervisor = padS && padS.toDataUrlSafe ? padS.toDataUrlSafe() : null;
 
-    const rec = DB.saveChecklist(buildRecord());
+    // Assign the checklist ID before storing photos so the IndexedDB records are linked.
+    const recordId = editingId || ('C-' + Date.now());
+    editingId = recordId;
+    const persistedCertificates = await persistCertificatePhotos(recordId);
+    const rec = DB.saveChecklist(buildRecord(persistedCertificates));
     editingId = rec.id;
+    certificates = persistedCertificates;
+    certificatePhotos = {};
+    persistedCertificates.forEach(c => { certificatePhotos[c.id] = (c.photos || []).map(p => ({ id: p.id, name: p.name })); });
+    await renderCertificateSection();
     const el = $('saveConfirm');
     el.textContent = I18n.t('msg.saved');
     el.className = 'banner banner-ok';
@@ -393,6 +638,9 @@
     writeFields(rec);
     answers = {};
     Object.entries(rec.answers || {}).forEach(([k, v]) => { answers[k] = Object.assign({}, v); });
+    certificates = Array.isArray(rec.certificates) ? rec.certificates.map(c => Object.assign({}, c, { photos: Array.isArray(c.photos) ? c.photos.slice() : [] })) : [];
+    certificatePhotos = {};
+    certificates.forEach(c => { certificatePhotos[c.id] = (c.photos || []).map(p => Object.assign({}, p)); });
     sigInspector = rec.sigInspector || null;
     sigSupervisor = rec.sigSupervisor || null;
     renderSections();
@@ -401,6 +649,7 @@
     if (padI && padI.loadDataUrl) padI.loadDataUrl(sigInspector);
     if (padS && padS.loadDataUrl) padS.loadDataUrl(sigSupervisor);
     $('verdictOverridden').value = '1';
+    renderCertificateSection();
     return true;
   }
 
@@ -461,6 +710,10 @@
     $('btnSave').addEventListener('click', save);
     $('btnPrint').addEventListener('click', () => window.print());
     $('btnEmail').addEventListener('click', openEmailModal);
+    $('btnAddEquipmentCert').addEventListener('click', () => openCertificateEditor('Equipment'));
+    $('btnAddPersonnelCert').addEventListener('click', () => openCertificateEditor('Personnel'));
+    $('btnAddAccessoryCert').addEventListener('click', () => openCertificateEditor('Accessory'));
+    $('btnShareCertificates').addEventListener('click', shareCertificateReport);
 
     $('emClose').addEventListener('click', closeEmailModal);
     $('emCancel').addEventListener('click', closeEmailModal);
@@ -507,12 +760,13 @@
       I18n.apply();
       renderSections();
       updateColour();
+      renderCertificateSection();
     });
 
     const params = new URLSearchParams(location.search);
     const id = params.get('id');
     if (id) loadRecord(id);
-    else renderSections();
+    else { renderSections(); renderCertificateSection(); }
   }
 
   if (document.readyState === 'loading') {

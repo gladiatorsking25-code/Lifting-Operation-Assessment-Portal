@@ -74,6 +74,9 @@
 <script src="js/i18n.js"></script>
 <script src="js/checklist-data.js"></script>
 <script src="js/mailer.js"></script>
+<script src="js/photo.js"></script>
+<script src="js/certificate-storage.js"></script>
+<script src="js/certificate-report.js"></script>
 <script>
 renderSidebar('checklists');
 renderFooter('app-footer');
@@ -186,8 +189,8 @@ function render() {
         <th>${esc(I18n.t('f.assetNo'))}</th>
         <th data-i18n="r.result"></th>
         <th data-i18n="r.defects"></th>
-        <th data-i18n="r.inspector"></th>
-        <th></th><th></th><th></th>
+        <th data-i18n="r.inspector"></th><th>Certificates</th>
+        <th></th><th></th><th></th><th></th>
       </tr></thead>
       <tbody>
         ${list.map(c => `
@@ -199,8 +202,10 @@ function render() {
             <td>${verdictBadge(c.verdict)}</td>
             <td class="num">${(c.counts && c.counts.defect) || 0}</td>
             <td>${esc(c.inspector || '—')}</td>
+            <td class="num">${Array.isArray(c.certificates) ? c.certificates.length : 0}</td>
             <td><a class="btn btn-sm btn-primary" href="checklist.html?id=${encodeURIComponent(c.id)}">${esc(I18n.t('btn.view'))}</a></td>
             <td><button class="btn btn-sm" onclick="emailRecord('${c.id}')">${esc(I18n.t('btn.email'))}</button></td>
+            <td><button class="btn btn-sm" onclick="shareRecordReport('${c.id}')">Share</button></td>
             <td><button class="btn btn-sm btn-danger" onclick="removeRecord('${c.id}')">${esc(I18n.t('btn.delete'))}</button></td>
           </tr>`).join('')}
       </tbody>
@@ -211,6 +216,11 @@ function render() {
 function removeRecord(id) {
   if (!confirm(I18n.t('msg.confirmDelete'))) return;
   DB.deleteChecklist(id);
+  // Also purge this record's certificate photos from IndexedDB, or the blobs
+  // are orphaned there for good.
+  if (typeof CertificateStore !== 'undefined') {
+    CertificateStore.deleteForChecklist(id).catch(e => console.warn('Could not remove certificate photos', e));
+  }
   populateFilters();
   renderLegend();
   render();
@@ -318,6 +328,18 @@ function emailRecord(id) {
       ? `<div class="banner banner-ok"><div>${esc(I18n.t('em.copied'))}</div></div>`
       : `<div class="banner banner-warn"><div>${esc(I18n.t('em.copy'))} ✕</div></div>`;
   });
+}
+
+async function shareRecordReport(id) {
+  const rec = DB.getChecklists().find(c => c.id === id);
+  if (!rec) return;
+  try {
+    const result = await CertificateReport.share(rec);
+    alert(result.shared ? 'Report shared. Select Email or WhatsApp from the share sheet.' : result.downloaded ? 'Report downloaded. Attach it to Email or WhatsApp.' : 'Share cancelled.');
+  } catch (e) {
+    console.error(e);
+    alert('Could not share the report.');
+  }
 }
 
 document.getElementById('btnExportCsv').addEventListener('click', () => {

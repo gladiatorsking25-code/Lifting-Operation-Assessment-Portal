@@ -167,6 +167,9 @@ document.getElementById('btnClear').addEventListener('click', () => {
   localStorage.removeItem(DB.KEYS.assessments);
   localStorage.removeItem(DB.KEYS.permits);
   localStorage.removeItem(DB.KEYS.counter);
+  localStorage.removeItem(DB.KEYS.checklists);
+  // Certificate photos live in IndexedDB, not localStorage — drop that store too.
+  try { indexedDB.deleteDatabase('cla_certificate_store_v1'); } catch (e) { /* ignore */ }
   alert('All local data erased.');
   location.reload();
 });

@@ -168,6 +168,25 @@
       <!-- ===================== The checklist ===================== -->
       <div id="checklistSections"></div>
 
+      <!-- ===================== Third-party certificates ===================== -->
+      <div class="section-title" data-i18n="sec.certificates">Third-party certificates &amp; competency records</div>
+      <div class="card certificate-manager-card">
+        <div class="certificate-toolbar no-print">
+          <div class="certificate-summary" id="certificateSummary">0</div>
+          <div class="certificate-toolbar-actions">
+            <button class="btn btn-sm" id="btnAddEquipmentCert" data-i18n="cert.addEquipment">+ Equipment certificate</button>
+            <button class="btn btn-sm" id="btnAddPersonnelCert" data-i18n="cert.addPersonnel">+ Personnel certificate</button>
+            <button class="btn btn-sm" id="btnAddAccessoryCert" data-i18n="cert.addAccessory">+ Accessory certificate</button>
+            <button class="btn btn-sm btn-primary" id="btnShareCertificates" data-i18n="cert.shareReport">Share report (Email / WhatsApp)</button>
+          </div>
+        </div>
+        <div class="banner banner-info" style="margin-top:12px;">
+          <div data-i18n="cert.registerInfo"></div>
+        </div>
+        <div id="certificateRows" class="certificate-list"></div>
+        <div id="certificateReport" class="certificate-report"></div>
+      </div>
+
       <!-- ===================== Verdict ===================== -->
       <div class="section-title" data-i18n="sec.verdict">Overall result</div>
       <div class="card">
@@ -292,6 +311,11 @@
   </div>
 </div>
 
+<!-- Modal host for the certificate editor and photo lightbox. Without this,
+     openCertificateEditor() in js/checklist.js falls back to document.body and
+     wipes the whole page when the modal is closed. -->
+<div id="lightboxRoot"></div>
+
 <script src="js/crane-data.js"></script>
 <script src="js/storage.js"></script>
 <script src="js/cloud-sync.js"></script>
@@ -300,6 +324,9 @@
 <script src="js/i18n.js"></script>
 <script src="js/checklist-data.js"></script>
 <script src="js/mailer.js"></script>
+<script src="js/photo.js"></script>
+<script src="js/certificate-storage.js"></script>
+<script src="js/certificate-report.js"></script>
 <script>
 renderSidebar('checklist');
 renderFooter('app-footer');

@@ -13,7 +13,7 @@
 // Bump CACHE_VERSION on every deployment (it must match APP_VERSION in
 // js/app-version.js — see the note there).
 
-const CACHE_VERSION = 'v1.2.0';
+const CACHE_VERSION = 'v1.3.1';
 const CACHE_NAME = `cla-${CACHE_VERSION}`;
 const OFFLINE_URL = 'offline.html';
 
@@ -60,6 +60,9 @@ const PRECACHE_URLS = [
   'js/checklist-data.js',
   'js/checklist.js',
   'js/mailer.js',
+  'js/photo.js',
+  'js/certificate-storage.js',
+  'js/certificate-report.js',
   'js/firebase-config.js',
   'js/firebase-init.js',
   'js/firebase-auth.js',

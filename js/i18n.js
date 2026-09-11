@@ -156,7 +156,83 @@ const I18n = (function () {
     // ---- Disclaimer ----
     'disc.title': { en: 'This checklist does not replace statutory inspection.', ar: 'لا تُغني قائمة الفحص هذه عن الفحص القانوني.', ur: 'یہ چیک لسٹ قانونی معائنے کا متبادل نہیں۔', hi: 'यह चेकलिस्ट वैधानिक निरीक्षण का विकल्प नहीं है।' },
     'disc.body':  { en: 'It is a routine monthly check by a competent person. It does not replace the statutory third-party examination, the manufacturer\'s service schedule, or a load test. Any item marked as a major defect means the machine is taken out of service until it is rectified and re-checked.', ar: 'هي فحص شهري روتيني يقوم به شخص مؤهل. ولا تُغني عن الفحص القانوني من طرف ثالث، أو جدول الصيانة الخاص بالصانع، أو اختبار التحميل. أي بند يُؤشَّر كعيب جسيم يعني إخراج المعدة من الخدمة حتى يتم إصلاحه وإعادة فحصه.', ur: 'یہ ایک اہل شخص کا معمول کا ماہانہ معائنہ ہے۔ یہ قانونی تھرڈ پارٹی معائنے، بنانے والے کے سروس شیڈول، یا لوڈ ٹیسٹ کا متبادل نہیں۔ جس آئٹم پر بڑی خرابی درج ہو، مشین کو درستگی اور دوبارہ جانچ تک سروس سے باہر رکھا جائے۔', hi: 'यह एक सक्षम व्यक्ति द्वारा नियमित मासिक जाँच है। यह वैधानिक थर्ड-पार्टी परीक्षण, निर्माता के सर्विस शेड्यूल, या लोड टेस्ट का विकल्प नहीं है। जिस आइटम पर बड़ी खराबी दर्ज हो, मशीन को सुधार और पुनः जाँच तक सेवा से बाहर रखा जाए।' },
-    'disc.translation': { en: 'Translations are a working draft — have a native speaker who works in the trade check them before using these to brief a crew.', ar: 'الترجمات مسودة عمل — اطلب من متحدث أصلي يعمل في المجال مراجعتها قبل استخدامها في توجيه الطاقم.', ur: 'تراجم ابتدائی مسودہ ہیں — عملے کو بریف کرنے سے پہلے کسی پیشہ ور مقامی زبان دان سے جانچ کرائیں۔', hi: 'अनुवाद एक कार्यशील मसौदा है — चालक दल को ब्रीफ करने से पहले इस पेशे के किसी मातृभाषी से जाँच करवाएँ।' }
+    'disc.translation': { en: 'Translations are a working draft — have a native speaker who works in the trade check them before using these to brief a crew.', ar: 'الترجمات مسودة عمل — اطلب من متحدث أصلي يعمل في المجال مراجعتها قبل استخدامها في توجيه الطاقم.', ur: 'تراجم ابتدائی مسودہ ہیں — عملے کو بریف کرنے سے پہلے کسی پیشہ ور مقامی زبان دان سے جانچ کرائیں۔', hi: 'अनुवाद एक कार्यशील मसौदा है — चालक दल को ब्रीफ करने से पहले इस पेशे के किसी मातृभाषी से जाँच करवाएँ।' },
+
+    // ---- Third-party certificates ----
+    'sec.certificates':   { en: 'Third-party certificates & competency records', ar: 'شهادات الطرف الثالث وسجلات الكفاءة', ur: 'تھرڈ پارٹی سرٹیفکیٹ اور اہلیت ریکارڈ', hi: 'थर्ड-पार्टी प्रमाणपत्र और योग्यता रिकॉर्ड' },
+    'cert.registerInfo':  { en: 'Certificate register: add third-party inspection certificates, operator / rigger / banksman competency certificates and lifting-accessory certificates. Photos are compressed and stored on the device; the checklist keeps the certificate details and photo references.', ar: 'سجل الشهادات: أضف شهادات الفحص من طرف ثالث، وشهادات كفاءة المشغّل/الرِيغر/مسؤول الإشارة، وشهادات ملحقات الرفع. تُضغط الصور وتُخزَّن على الجهاز، وتحتفظ القائمة ببيانات الشهادة ومراجع الصور.', ur: 'سرٹیفکیٹ رجسٹر: تھرڈ پارٹی معائنہ سرٹیفکیٹ، آپریٹر/رگر/بینکسمین اہلیت سرٹیفکیٹ اور لفٹنگ سازوسامان سرٹیفکیٹ شامل کریں۔ تصاویر کمپریس ہو کر ڈیوائس پر محفوظ ہوتی ہیں؛ چیک لسٹ میں سرٹیفکیٹ کی تفصیل اور تصویری حوالہ رہتا ہے۔', hi: 'प्रमाणपत्र रजिस्टर: थर्ड-पार्टी निरीक्षण प्रमाणपत्र, ऑपरेटर / रिगर / बैंक्समैन योग्यता प्रमाणपत्र और लिफ्टिंग सहायक प्रमाणपत्र जोड़ें। फ़ोटो संपीड़ित होकर डिवाइस पर संग्रहीत होते हैं; चेकलिस्ट में प्रमाणपत्र विवरण और फ़ोटो संदर्भ रहते हैं।' },
+    'cert.addEquipment':  { en: '+ Equipment certificate', ar: '+ شهادة معدة', ur: '+ مشین سرٹیفکیٹ', hi: '+ उपकरण प्रमाणपत्र' },
+    'cert.addPersonnel':  { en: '+ Personnel certificate', ar: '+ شهادة فرد', ur: '+ عملہ سرٹیفکیٹ', hi: '+ कार्मिक प्रमाणपत्र' },
+    'cert.addAccessory':  { en: '+ Accessory certificate', ar: '+ شهادة ملحق', ur: '+ سازوسامان سرٹیفکیٹ', hi: '+ सहायक प्रमाणपत्र' },
+    'cert.shareReport':   { en: 'Share report (Email / WhatsApp)', ar: 'مشاركة التقرير (بريد / واتساب)', ur: 'رپورٹ شیئر کریں (ای میل / واٹس ایپ)', hi: 'रिपोर्ट साझा करें (ईमेल / व्हाट्सएप)' },
+    'cert.none':          { en: 'No third-party certificates have been added.', ar: 'لم تتم إضافة أي شهادات طرف ثالث.', ur: 'کوئی تھرڈ پارٹی سرٹیفکیٹ شامل نہیں کیا گیا۔', hi: 'कोई थर्ड-पार्टी प्रमाणपत्र नहीं जोड़ा गया है।' },
+    'cert.reportEmpty':   { en: 'No certificates attached. Add the applicable third-party certificates above.', ar: 'لا توجد شهادات مرفقة. أضف شهادات الطرف الثالث المطلوبة أعلاه.', ur: 'کوئی سرٹیفکیٹ منسلک نہیں۔ اوپر متعلقہ تھرڈ پارٹی سرٹیفکیٹ شامل کریں۔', hi: 'कोई प्रमाणपत्र संलग्न नहीं। ऊपर लागू थर्ड-पार्टी प्रमाणपत्र जोड़ें।' },
+    'cert.recordTitle':   { en: 'Third-party certificate record', ar: 'سجل شهادات الطرف الثالث', ur: 'تھرڈ پارٹی سرٹیفکیٹ ریکارڈ', hi: 'थर्ड-पार्टी प्रमाणपत्र रिकॉर्ड' },
+    'cert.complianceSummary': { en: 'Certificate compliance summary', ar: 'ملخص امتثال الشهادات', ur: 'سرٹیفکیٹ تعمیل خلاصہ', hi: 'प्रमाणपत्र अनुपालन सारांश' },
+
+    // Categories
+    'cat.equipment':      { en: 'Equipment', ar: 'معدة', ur: 'مشین', hi: 'उपकरण' },
+    'cat.personnel':      { en: 'Personnel', ar: 'الأفراد', ur: 'عملہ', hi: 'कार्मिक' },
+    'cat.accessory':      { en: 'Accessory', ar: 'ملحق', ur: 'سازوسامان', hi: 'सहायक' },
+
+    // Certificate editor modal
+    'cert.add':           { en: 'Add', ar: 'إضافة', ur: 'شامل کریں', hi: 'जोड़ें' },
+    'cert.edit':          { en: 'Edit', ar: 'تعديل', ur: 'ترمیم', hi: 'संपादित करें' },
+    'cert.certWord':      { en: 'certificate', ar: 'شهادة', ur: 'سرٹیفکیٹ', hi: 'प्रमाणपत्र' },
+    // Full-phrase modal titles — kept whole so verb/noun order stays correct in
+    // each language rather than being concatenated word-by-word.
+    'cert.addTitle':      { en: 'Add certificate', ar: 'إضافة شهادة', ur: 'سرٹیفکیٹ شامل کریں', hi: 'प्रमाणपत्र जोड़ें' },
+    'cert.editTitle':     { en: 'Edit certificate', ar: 'تعديل شهادة', ur: 'سرٹیفکیٹ میں ترمیم', hi: 'प्रमाणपत्र संपादित करें' },
+    'cert.fCategory':     { en: 'Certificate category', ar: 'فئة الشهادة', ur: 'سرٹیفکیٹ کی قسم', hi: 'प्रमाणपत्र श्रेणी' },
+    'cert.fTitle':        { en: 'Certificate / document title', ar: 'عنوان الشهادة / المستند', ur: 'سرٹیفکیٹ / دستاویز کا عنوان', hi: 'प्रमाणपत्र / दस्तावेज़ शीर्षक' },
+    'cert.fHolder':       { en: 'Holder / equipment / accessory', ar: 'الحامل / المعدة / الملحق', ur: 'حامل / مشین / سازوسامان', hi: 'धारक / उपकरण / सहायक' },
+    'cert.fNumber':       { en: 'Certificate number', ar: 'رقم الشهادة', ur: 'سرٹیفکیٹ نمبر', hi: 'प्रमाणपत्र संख्या' },
+    'cert.fIssuer':       { en: 'Issuing authority / company', ar: 'جهة الإصدار / الشركة', ur: 'جاری کنندہ ادارہ / کمپنی', hi: 'जारीकर्ता प्राधिकरण / कंपनी' },
+    'cert.fWll':          { en: 'WLL / SWL (accessories)', ar: 'حمل العمل الآمن (للملحقات)', ur: 'WLL / SWL (سازوسامان)', hi: 'WLL / SWL (सहायक)' },
+    'cert.fIssue':        { en: 'Issue date', ar: 'تاريخ الإصدار', ur: 'اجرا کی تاریخ', hi: 'जारी तिथि' },
+    'cert.fExpiry':       { en: 'Expiry date', ar: 'تاريخ الانتهاء', ur: 'میعاد ختم ہونے کی تاریخ', hi: 'समाप्ति तिथि' },
+    'cert.fNotes':        { en: 'Notes / restrictions', ar: 'ملاحظات / قيود', ur: 'نوٹس / پابندیاں', hi: 'टिप्पणी / प्रतिबंध' },
+    'cert.fPhotos':       { en: 'Certificate photos', ar: 'صور الشهادة', ur: 'سرٹیفکیٹ کی تصاویر', hi: 'प्रमाणपत्र फ़ोटो' },
+    'cert.photoHint':     { en: 'Use the camera on a phone, or choose photos. Images are resized before storage.', ar: 'استخدم كاميرا الهاتف أو اختر صوراً. يتم تصغير الصور قبل التخزين.', ur: 'فون پر کیمرہ استعمال کریں یا تصاویر منتخب کریں۔ محفوظ کرنے سے پہلے تصاویر کا سائز کم کیا جاتا ہے۔', hi: 'फ़ोन पर कैमरा उपयोग करें, या फ़ोटो चुनें। संग्रह से पहले छवियाँ आकार में छोटी की जाती हैं।' },
+    'cert.noPhotos':      { en: 'No photos added yet.', ar: 'لم تتم إضافة صور بعد.', ur: 'ابھی کوئی تصویر شامل نہیں کی گئی۔', hi: 'अभी कोई फ़ोटो नहीं जोड़ी गई।' },
+    'cert.processing':    { en: 'Processing certificate photo(s)…', ar: 'جارٍ معالجة صور الشهادة…', ur: 'سرٹیفکیٹ تصاویر پر کارروائی ہو رہی ہے…', hi: 'प्रमाणपत्र फ़ोटो संसाधित हो रहे हैं…' },
+    'cert.readError':     { en: 'Could not read the image.', ar: 'تعذّر قراءة الصورة.', ur: 'تصویر پڑھی نہیں جا سکی۔', hi: 'छवि पढ़ी नहीं जा सकी।' },
+    'cert.saveBtn':       { en: 'Save certificate', ar: 'حفظ الشهادة', ur: 'سرٹیفکیٹ محفوظ کریں', hi: 'प्रमाणपत्र सहेजें' },
+    'cert.cancel':        { en: 'Cancel', ar: 'إلغاء', ur: 'منسوخ', hi: 'रद्द करें' },
+    'cert.deleteBtn':     { en: 'Delete', ar: 'حذف', ur: 'حذف', hi: 'हटाएँ' },
+    'cert.deleteConfirm': { en: 'Delete this certificate and its photos?', ar: 'حذف هذه الشهادة وصورها؟', ur: 'یہ سرٹیفکیٹ اور اس کی تصاویر حذف کریں؟', hi: 'यह प्रमाणपत्र और इसके फ़ोटो हटाएँ?' },
+    'cert.titleFallback': { en: 'Certificate', ar: 'شهادة', ur: 'سرٹیفکیٹ', hi: 'प्रमाणपत्र' },
+    'cert.defEquipment':  { en: 'Third-party equipment inspection', ar: 'فحص المعدة من طرف ثالث', ur: 'تھرڈ پارٹی مشین معائنہ', hi: 'थर्ड-पार्टी उपकरण निरीक्षण' },
+    'cert.defPersonnel':  { en: 'Competency / licence certificate', ar: 'شهادة كفاءة / رخصة', ur: 'اہلیت / لائسنس سرٹیفکیٹ', hi: 'योग्यता / लाइसेंस प्रमाणपत्र' },
+    'cert.defAccessory':  { en: 'Lifting accessory certificate', ar: 'شهادة ملحق رفع', ur: 'لفٹنگ سازوسامان سرٹیفکیٹ', hi: 'लिफ्टिंग सहायक प्रमाणपत्र' },
+
+    // Report field labels
+    'cert.lCategory':     { en: 'Category', ar: 'الفئة', ur: 'قسم', hi: 'श्रेणी' },
+    'cert.lHolder':       { en: 'Holder / Item', ar: 'الحامل / البند', ur: 'حامل / آئٹم', hi: 'धारक / मद' },
+    'cert.lNumber':       { en: 'Certificate No.', ar: 'رقم الشهادة', ur: 'سرٹیفکیٹ نمبر', hi: 'प्रमाणपत्र सं.' },
+    'cert.lIssuer':       { en: 'Issuer', ar: 'جهة الإصدار', ur: 'جاری کنندہ', hi: 'जारीकर्ता' },
+    'cert.lIssue':        { en: 'Issue', ar: 'الإصدار', ur: 'اجرا', hi: 'जारी' },
+    'cert.lExpiry':       { en: 'Expiry', ar: 'الانتهاء', ur: 'میعاد', hi: 'समाप्ति' },
+    'cert.lNotes':        { en: 'Notes', ar: 'ملاحظات', ur: 'نوٹس', hi: 'टिप्पणी' },
+    'cert.countWord':     { en: 'certificates', ar: 'شهادات', ur: 'سرٹیفکیٹ', hi: 'प्रमाणपत्र' },
+    'cert.headValid':     { en: 'Valid', ar: 'سارية', ur: 'کارآمد', hi: 'वैध' },
+    'cert.headExpiring':  { en: 'Expiring ≤30 days', ar: 'تنتهي خلال 30 يوماً أو أقل', ur: '30 دن یا کم میں ختم', hi: '30 दिन या कम में समाप्त' },
+    'cert.headExpired':   { en: 'Expired', ar: 'منتهية', ur: 'میعاد ختم', hi: 'समाप्त' },
+
+    // Expiry badges (certStatus labels)
+    'exp.valid':          { en: 'Valid', ar: 'سارية', ur: 'کارآمد', hi: 'वैध' },
+    'exp.expiring':       { en: 'Expiring in {n} day(s)', ar: 'تنتهي خلال {n} يوم', ur: '{n} دن میں ختم', hi: '{n} दिन में समाप्त' },
+    'exp.expired':        { en: 'Expired', ar: 'منتهية', ur: 'میعاد ختم', hi: 'समाप्त' },
+    'exp.missing':        { en: 'No expiry recorded', ar: 'لا يوجد تاريخ انتهاء', ur: 'میعاد درج نہیں', hi: 'समाप्ति दर्ज नहीं' },
+
+    // Share / report result messages
+    'cert.sharedMsg':     { en: 'Certificate report shared. Choose Email or WhatsApp from the share sheet.', ar: 'تمت مشاركة تقرير الشهادات. اختر البريد أو واتساب من قائمة المشاركة.', ur: 'سرٹیفکیٹ رپورٹ شیئر ہو گئی۔ شیئر شیٹ سے ای میل یا واٹس ایپ منتخب کریں۔', hi: 'प्रमाणपत्र रिपोर्ट साझा की गई। शेयर शीट से ईमेल या व्हाट्सएप चुनें।' },
+    'cert.downloadedMsg': { en: 'Certificate report downloaded. You can attach it to Email or WhatsApp.', ar: 'تم تنزيل تقرير الشهادات. يمكنك إرفاقه بالبريد أو واتساب.', ur: 'سرٹیفکیٹ رپورٹ ڈاؤن لوڈ ہو گئی۔ آپ اسے ای میل یا واٹس ایپ میں منسلک کر سکتے ہیں۔', hi: 'प्रमाणपत्र रिपोर्ट डाउनलोड हुई। आप इसे ईमेल या व्हाट्सएप में संलग्न कर सकते हैं।' },
+    'cert.shareCancelled':{ en: 'Share cancelled.', ar: 'أُلغيت المشاركة.', ur: 'شیئرنگ منسوخ۔', hi: 'साझा करना रद्द।' },
+    'cert.shareError':    { en: 'Could not share the certificate report.', ar: 'تعذّرت مشاركة تقرير الشهادات.', ur: 'سرٹیفکیٹ رپورٹ شیئر نہیں ہو سکی۔', hi: 'प्रमाणपत्र रिपोर्ट साझा नहीं हो सकी।' },
+    'cert.shareTitle':    { en: 'Third-Party Certificate Report', ar: 'تقرير شهادات الطرف الثالث', ur: 'تھرڈ پارٹی سرٹیفکیٹ رپورٹ', hi: 'थर्ड-पार्टी प्रमाणपत्र रिपोर्ट' },
+    'cert.shareText':     { en: 'Certificate report for {asset}', ar: 'تقرير الشهادات للمعدة {asset}', ur: '{asset} کے لیے سرٹیفکیٹ رپورٹ', hi: '{asset} के लिए प्रमाणपत्र रिपोर्ट' },
+    'cert.summaryTpl':    { en: '{total} certificates · {valid} valid · {expiring} expiring · {expired} expired', ar: '{total} شهادات · {valid} سارية · {expiring} قرب الانتهاء · {expired} منتهية', ur: '{total} سرٹیفکیٹ · {valid} کارآمد · {expiring} میعاد قریب · {expired} میعاد ختم', hi: '{total} प्रमाणपत्र · {valid} वैध · {expiring} समाप्त होने वाले · {expired} समाप्त' }
   };
 
   let current = 'en';
