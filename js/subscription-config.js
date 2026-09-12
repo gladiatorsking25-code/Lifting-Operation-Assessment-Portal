@@ -26,9 +26,15 @@ const SUBSCRIPTION_CONFIG = {
   // live Play price isn't available). Set it to your real price; inside the
   // Android app the actual Play Store price replaces it automatically.
   PRODUCTS: [
-    { id: 'pro_monthly', label: 'Monthly', period: 'P1M', per: 'per month', displayPrice: '' },
-    { id: 'pro_yearly',  label: 'Yearly',  period: 'P1Y', per: 'per year',  displayPrice: '' }
+    { id: 'pro_monthly', label: 'Monthly', period: 'P1M', per: 'per month', displayPrice: '$5' }
   ],
+
+  // Shown on the paywall — says what the subscription funds. Keeps it honest and
+  // attractive: people subscribe to a maintained, improving tool.
+  PLAN_NOTE: 'Your subscription keeps Duck HSE Portal maintained and updated — new crane data, monthly checklists, safety features, and support.',
+  // A UAE-consumer-law-friendly one-liner (auto-renewal + VAT + cancellation are
+  // also spelled out in the Terms). Google Play handles VAT and billing.
+  PLAN_TERMS: 'Includes a 14-day free trial, then $5 / month. Auto-renews monthly — cancel anytime in Google Play. Price includes VAT where applicable.',
 
   // ---- Direct / offline payment (invoice, bank transfer, PayPal) ----
   // IMPORTANT: Google Play requires Play Billing for digital subscriptions sold

@@ -37,7 +37,7 @@
     <div id="payOffline"></div>
 
     <div id="payNotInApp" hidden>
-      <div class="banner banner-info"><div>To subscribe, open <strong>Duck HSE Portal</strong> from the Google Play app on your Android device. Purchases are handled by Google Play, not inside this web page.</div></div>
+      <div class="banner banner-info"><div>Card subscription is handled by <strong>Google Play</strong> inside the Android app. On the web you can subscribe by <strong>PayPal or bank transfer</strong> — see "Other ways to subscribe" below.</div></div>
     </div>
 
     <div id="payResult" style="margin-top:12px;"></div>
@@ -138,15 +138,25 @@
         </div>
         <div style="text-align:right;">
           ${price ? `<div class="num" style="font-weight:600;">${price}</div>` : ''}
-          <button class="btn btn-primary btn-sm buy-btn" data-product="${p.id}" ${inApp ? '' : 'disabled'}>Subscribe</button>
+          <button class="btn btn-primary btn-sm buy-btn" data-product="${p.id}">Subscribe</button>
         </div>
       </div>`;
-    }).join('');
+    }).join('') +
+      (cfg.PLAN_NOTE ? `<p class="hint" style="margin:4px 0 0;">${escOff(cfg.PLAN_NOTE)}</p>` : '') +
+      (cfg.PLAN_TERMS ? `<p class="hint" style="margin:6px 0 12px;">${escOff(cfg.PLAN_TERMS)}</p>` : '');
     if (!inApp) $('payNotInApp').hidden = false;
     document.querySelectorAll('.buy-btn').forEach(b => b.addEventListener('click', () => buy(b.getAttribute('data-product'))));
   }
 
   async function buy(productId) {
+    // In a browser there is no Play Billing — route to the invoice/bank/PayPal
+    // option (which works everywhere) instead of dead-ending.
+    if (!Billing.available()) {
+      const off = document.querySelector('.pay-offline');
+      if (off) { off.open = true; try { off.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (e) {} }
+      $('payResult').innerHTML = '<div class="banner banner-info"><div>Card subscription runs through Google Play inside the Android app. To subscribe now on the web, use <strong>PayPal</strong> or <strong>bank transfer</strong> below.</div></div>';
+      return;
+    }
     $('payResult').innerHTML = '<div class="hint">Opening Google Play…</div>';
     try {
       await Billing.subscribe(productId);
