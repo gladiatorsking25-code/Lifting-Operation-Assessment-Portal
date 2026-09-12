@@ -63,50 +63,31 @@
 
   $('paySignOut').addEventListener('click', (e) => { e.preventDefault(); Access.signOut(); });
 
-  // Direct / offline payment (invoice, bank transfer, PayPal). For B2B and
-  // non-Play distribution; access is granted manually from the admin dashboard
-  // once payment is confirmed. Hidden entirely if disabled in config.
+  // Web / B2B path: the customer REQUESTS access; you send a payment link or
+  // invoice privately (by email) and activate them from the admin dashboard.
+  // No bank details are shown or shipped — safer for you.
   function escOff(v){ return String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
   function renderOffline() {
     const op = cfg.OFFLINE_PAYMENT;
     const host = $('payOffline');
     if (!host) return;
     if (!op || !op.enabled) { host.innerHTML = ''; return; }
-    const b = op.bank || {};
-    const activationSubject = encodeURIComponent('Subscription activation request — Duck HSE Portal');
-    const activationBody = encodeURIComponent(
-      'Hello,\n\nI have paid for a subscription and would like my account activated.\n\n' +
-      'Account email (the one I sign in with): __________\n' +
-      'Payment method (PayPal / bank transfer): __________\n' +
-      'Payment reference / date: __________\n\nThank you.');
+    const requestSubject = encodeURIComponent('Duck HSE Portal — subscription request');
+    const requestBody = encodeURIComponent(
+      'Hello,\n\nI would like to subscribe to Duck HSE Portal.\n\n' +
+      'My account email (the one I sign in with): __________\n' +
+      'Preferred payment method (PayPal / bank transfer / card): __________\n\n' +
+      'Please send me a secure payment link or invoice. Thank you.');
     host.innerHTML = `
-      <details class="pay-offline">
-        <summary>Other ways to subscribe — invoice / bank transfer</summary>
+      <details class="pay-offline" id="payOfflineDetails">
+        <summary>Not on the Android app? Request access</summary>
         <div class="banner banner-info" style="margin-top:10px;"><div>
-          For direct or company (B2B) subscriptions. Pay by PayPal or bank transfer, then
-          request activation below — an administrator confirms the payment and unlocks your
-          account. <em>In the Google Play version, please use the Subscribe buttons above.</em>
+          For web or company (B2B) subscriptions: request access below and we’ll send you a
+          secure payment link or invoice, then activate your account. Payment details are
+          arranged privately by email — never shown here.
         </div></div>
-        ${op.paypalEmail ? `
-        <div class="card" style="margin-bottom:10px;">
-          <strong>PayPal</strong>
-          <div class="hint">Send payment to:</div>
-          <div class="num" style="font-weight:600; margin:4px 0;">${escOff(op.paypalEmail)}</div>
-          <a class="btn btn-sm btn-primary" href="https://www.paypal.com/" target="_blank" rel="noopener">Open PayPal</a>
-        </div>` : ''}
-        <div class="card" style="margin-bottom:10px;">
-          <strong>Bank transfer</strong>
-          <table class="spec-table" style="margin-top:6px;">
-            <tr><td>Account name</td><td>${escOff(b.accountName)}</td></tr>
-            <tr><td>Bank</td><td>${escOff(b.bankName)}</td></tr>
-            <tr><td>IBAN</td><td class="num">${escOff(b.iban)}</td></tr>
-            <tr><td>Account no.</td><td class="num">${escOff(b.accountNumber)}</td></tr>
-            <tr><td>SWIFT</td><td class="num">${escOff(b.swift)}</td></tr>
-            <tr><td>Bank address</td><td>${escOff(b.bankAddress)}</td></tr>
-          </table>
-        </div>
-        <a class="btn btn-sm" style="width:100%; justify-content:center;" href="mailto:${escOff(cfg.SUPPORT_EMAIL)}?subject=${activationSubject}&body=${activationBody}">I’ve paid — request activation</a>
-        <p class="hint" style="margin-top:8px;">Bank transfers can take 1–3 business days to confirm. You’ll get access as soon as payment is verified.</p>
+        <a class="btn btn-primary btn-sm" style="width:100%; justify-content:center;" href="mailto:${escOff(cfg.SUPPORT_EMAIL)}?subject=${requestSubject}&body=${requestBody}">Request access / invoice</a>
+        <p class="hint" style="margin-top:8px;">You’ll get access as soon as payment is confirmed — usually the same day.</p>
       </details>`;
   }
   renderOffline();
@@ -152,9 +133,9 @@
     // In a browser there is no Play Billing — route to the invoice/bank/PayPal
     // option (which works everywhere) instead of dead-ending.
     if (!Billing.available()) {
-      const off = document.querySelector('.pay-offline');
-      if (off) { off.open = true; try { off.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (e) {} }
-      $('payResult').innerHTML = '<div class="banner banner-info"><div>Card subscription runs through Google Play inside the Android app. To subscribe now on the web, use <strong>PayPal</strong> or <strong>bank transfer</strong> below.</div></div>';
+      const off = document.getElementById('payOfflineDetails') || document.querySelector('.pay-offline');
+      if (off) { off.open = true; try { off.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e) {} }
+      $('payResult').innerHTML = '<div class="banner banner-info"><div>Card subscription is billed through <strong>Google Play</strong> in the Android app. Not on the app yet? Tap <strong>“Request access”</strong> below and we’ll send you a secure payment link.</div></div>';
       return;
     }
     $('payResult').innerHTML = '<div class="hint">Opening Google Play…</div>';

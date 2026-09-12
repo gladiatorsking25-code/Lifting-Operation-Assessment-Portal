@@ -42,18 +42,13 @@ const SUBSCRIPTION_CONFIG = {
   // and app builds distributed OUTSIDE Google Play. Payment is confirmed by you
   // and access is granted manually from the admin dashboard. Set enabled:false
   // to hide it (e.g. in the Play Store build) so you stay policy-compliant.
+  // DO NOT put bank account numbers / IBAN / SWIFT here — this file ships inside
+  // the app and is publicly readable. The web/B2B flow instead lets a customer
+  // REQUEST access by email; you then send a payment link or invoice privately
+  // and activate them from the admin dashboard. Set enabled:false to hide it
+  // entirely (e.g. a pure Play-Store build).
   OFFLINE_PAYMENT: {
-    enabled: true,
-    payerName: 'SABIR AMIN SHAHID AMIN',
-    paypalEmail: 'sabiriis143@gmail.com',
-    bank: {
-      accountName: 'SABIR AMIN SHAHID AMIN',
-      bankName: 'Commercial Bank of Dubai',
-      iban: 'AE950230000001009935808',
-      accountNumber: '1009935808',
-      swift: 'CBDUAEAD',
-      bankAddress: 'Al Ittihad Street, PO BOX 2668, Dubai, UAE'
-    }
+    enabled: true
   },
 
   // ---- Grace / account states ----
