@@ -22,9 +22,12 @@ const SUBSCRIPTION_CONFIG = {
   // Subscriptions. The billing code (js/billing.js) offers these; the Cloud
   // Function verifies whichever one was purchased.
   PLAY_PACKAGE_NAME: 'Duck.HSE.Portal', // must match twa-manifest.json packageId
+  // `displayPrice` is what shows on the paywall in a normal browser (where the
+  // live Play price isn't available). Set it to your real price; inside the
+  // Android app the actual Play Store price replaces it automatically.
   PRODUCTS: [
-    { id: 'pro_monthly', label: 'Monthly', period: 'P1M' },
-    { id: 'pro_yearly',  label: 'Yearly',  period: 'P1Y' }
+    { id: 'pro_monthly', label: 'Monthly', period: 'P1M', per: 'per month', displayPrice: '' },
+    { id: 'pro_yearly',  label: 'Yearly',  period: 'P1Y', per: 'per year',  displayPrice: '' }
   ],
 
   // ---- Direct / offline payment (invoice, bank transfer, PayPal) ----

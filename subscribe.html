@@ -126,11 +126,15 @@
     (details || []).forEach(d => { byId[d.itemId || d.id] = d; });
     $('payPlans').innerHTML = cfg.PRODUCTS.map(p => {
       const d = byId[p.id];
-      const price = d && d.price ? (d.price.value + ' ' + d.price.currency) : '';
+      // Live Play price if in the app; otherwise the configured display price;
+      // otherwise just the billing period so the plan still reads clearly.
+      const price = (d && d.price) ? (d.price.value + ' ' + d.price.currency)
+        : (p.displayPrice || '');
+      const sub = price ? (p.per || '') : (p.per || ('Duck HSE Portal ' + p.label));
       return `<div class="card" style="margin-bottom:10px; display:flex; align-items:center; justify-content:space-between; gap:10px;">
         <div>
           <strong>${p.label}</strong>
-          <div class="hint">${d && d.title ? d.title : ('Duck HSE Portal ' + p.label)}</div>
+          <div class="hint">${sub}</div>
         </div>
         <div style="text-align:right;">
           ${price ? `<div class="num" style="font-weight:600;">${price}</div>` : ''}
@@ -138,6 +142,7 @@
         </div>
       </div>`;
     }).join('');
+    if (!inApp) $('payNotInApp').hidden = false;
     document.querySelectorAll('.buy-btn').forEach(b => b.addEventListener('click', () => buy(b.getAttribute('data-product'))));
   }
 
@@ -170,9 +175,15 @@
       const left = Entitlements.daysLeft(access.until);
       $('payTitle').textContent = 'You’re on the free trial';
       $('payStatus').textContent = `${left} day${left === 1 ? '' : 's'} left. Subscribe now to keep access when the trial ends.`;
-    } else {
+    } else if (access.state === 'locked' || access.state === 'expired') {
       $('payTitle').textContent = 'Your free trial has ended';
       $('payStatus').textContent = 'Subscribe to continue using Duck HSE Portal.';
+    } else {
+      // pending / unknown — the backend hasn't stamped a trial yet, or the
+      // entitlement can't be read. Show the plans neutrally rather than a
+      // misleading "trial ended".
+      $('payTitle').textContent = 'Choose your plan';
+      $('payStatus').textContent = 'Subscribe monthly or yearly below, or pay by invoice / bank transfer.';
     }
     let details = null;
     try { details = await Billing.getProducts(); } catch (e) { /* not in app */ }

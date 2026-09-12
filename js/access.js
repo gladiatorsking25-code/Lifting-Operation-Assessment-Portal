@@ -83,10 +83,13 @@
     if (!cloudSignedIn()) { go(cfg().LOGIN_PAGE + '?next=' + enc(cfg().PAYWALL_PAGE)); return; }
     armAuthWatch(function (user, access, doc) {
       if (!user) { go(cfg().LOGIN_PAGE + '?next=' + enc(cfg().PAYWALL_PAGE)); return; }
-      if (access && access.hasAccess && access.state !== 'trial') {
-        // Already fully entitled (paid/admin/grant) — no need for the paywall.
-        go('index.html'); return;
-      }
+      // Only leave the paywall when the account is genuinely, fully entitled: a
+      // paid subscription, an admin comp/grant, or the admin role. Trial users
+      // may open it to subscribe early, and 'pending'/'unknown' (the backend
+      // hasn't finished deploying, so the entitlement doc can't be read yet)
+      // must NOT bounce — otherwise the page just flickers straight back.
+      const ENTITLED = ['active', 'granted', 'admin'];
+      if (access && ENTITLED.indexOf(access.state) !== -1) { go('index.html'); return; }
       if (cb) cb({ configured: true, user: user, access: access, doc: doc });
     });
   }

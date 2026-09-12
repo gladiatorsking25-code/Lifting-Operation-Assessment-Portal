@@ -121,6 +121,27 @@ const Entitlements = (function () {
     _cbs.slice().forEach(function (f) { try { f(access, doc); } catch (e) { console.error(e); } });
   }
 
+  // Client-side free-trial bootstrap. Runs when an account has no entitlement at
+  // all (a 'pending' doc). It writes the trial fields the Firestore rules allow a
+  // user to set once (status 'trial' + a bounded end date), so trials work
+  // without the Cloud Functions / Blaze plan. The rules forbid delete and a
+  // second trial, so it can't be reset or extended. If Cloud Functions ARE
+  // deployed they stamp the trial first, and this becomes a no-op.
+  const _trialTried = {};
+  function ensureTrial(uid, doc) {
+    if (_trialTried[uid]) return;
+    const d = doc || {};
+    if (d.role || d.subscriptionStatus || d.trialEndsAt || d.adminGrantUntil || d.compForever) return;
+    _trialTried[uid] = true;
+    const days = (typeof SUBSCRIPTION_CONFIG !== 'undefined' && SUBSCRIPTION_CONFIG.TRIAL_DAYS) || 14;
+    const now = Date.now();
+    firebase.firestore().collection('users').doc(uid).set({
+      subscriptionStatus: 'trial',
+      trialStartedAt: now,
+      trialEndsAt: now + days * 86400000
+    }, { merge: true }).catch(function (e) { console.warn('Trial bootstrap could not write', e); });
+  }
+
   function watch(uid, cb) {
     if (typeof FIREBASE_READY === 'undefined' || !FIREBASE_READY) {
       const a = mk('unconfigured', true, null); // no backend yet → don't gate
@@ -139,6 +160,8 @@ const Entitlements = (function () {
           const access = computeAccess(doc, Date.now());
           writeCache(access, uid);
           _emit(access, doc);
+          // Brand-new account with nothing stamped yet → start its free trial.
+          if (access.state === 'pending') ensureTrial(uid, doc);
         }, function (err) {
           console.error('Entitlement watch failed', err);
           // Fall back to the cached value rather than locking someone out over a

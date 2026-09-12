@@ -1,14 +1,16 @@
-// firestore.rules — the real, server-enforced security boundary. Deploy with
+// firestore.rules — the real, server-enforced security boundary.
+// Publish from Firebase Console → Firestore Database → Rules, or
 //   firebase deploy --only firestore:rules
-// (or paste into Firebase Console → Firestore Database → Rules).
 //
-// Unlike the client-side sign-in gate, these run on Google's servers and cannot
-// be bypassed from devtools. They enforce two things:
+// What these enforce:
 //   1. A user only ever reads/writes their own data (users/{uid}/...).
-//   2. A user can NEVER write their own entitlement fields (role, subscription
-//      status, trial dates, admin grants). Those are written only by the Cloud
-//      Functions in functions/index.js via the Admin SDK, which bypasses these
-//      rules. That is what makes subscription state tamper-proof.
+//   2. PAID and ADMIN entitlement (an active/comped subscription, an expiry, an
+//      admin grant, or the admin role) is NEVER client-writable — only the Cloud
+//      Functions (Admin SDK) or a verified Play purchase can set those.
+//   3. EXCEPTION: a signed-in user may start their own FREE TRIAL once, with the
+//      end date bounded to ~the trial length, and delete is forbidden — so nobody
+//      can extend or reset it. This lets trials work without Cloud Functions
+//      (free Spark plan); paid subscriptions still require server verification.
 
 rules_version = '2';
 service cloud.firestore {
@@ -22,29 +24,53 @@ service cloud.firestore {
         && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
 
-    // Fields that describe entitlement — never client-writable.
-    function entitlementKeys() {
-      return ['role', 'subscriptionStatus', 'subscriptionId', 'subscriptionExpiryMillis',
-              'subscriptionUpdatedAt', 'trialStartedAt', 'trialEndsAt',
-              'adminGrantUntil', 'compForever'];
+    // Paid + admin state — never client-writable.
+    function protectedKeys() {
+      return ['role', 'subscriptionId', 'subscriptionExpiryMillis',
+              'subscriptionUpdatedAt', 'adminGrantUntil', 'compForever'];
     }
-    function touchesEntitlement() {
-      return request.resource.data.diff(resource.data).affectedKeys().hasAny(entitlementKeys());
+    // The only fields a client may set for a one-time free trial.
+    function trialKeys() {
+      return ['subscriptionStatus', 'trialStartedAt', 'trialEndsAt'];
+    }
+    // Every entitlement field (paid + admin + trial), for the "plain profile" test.
+    function allEntitlementKeys() {
+      return ['role', 'subscriptionId', 'subscriptionExpiryMillis',
+              'subscriptionUpdatedAt', 'adminGrantUntil', 'compForever',
+              'subscriptionStatus', 'trialStartedAt', 'trialEndsAt'];
+    }
+
+    function changed() {
+      return request.resource.data.diff(resource.data).affectedKeys();
+    }
+    // A valid one-time trial payload: status exactly 'trial' and an end date no
+    // more than ~15 days out (bounds a 14-day trial + a little clock slack).
+    function trialWindowOk() {
+      return request.resource.data.subscriptionStatus == 'trial'
+        && request.resource.data.trialEndsAt is number
+        && request.resource.data.trialEndsAt > request.time.toMillis()
+        && request.resource.data.trialEndsAt <= request.time.toMillis() + 1296000000;
     }
 
     match /users/{uid} {
       allow get:  if isOwner(uid) || isAdmin();
       allow list: if isAdmin();
 
-      // A client may create its own profile doc but may not seed any entitlement
-      // field — the onUserCreate Cloud Function owns those.
-      allow create: if isOwner(uid)
-                    && !request.resource.data.keys().hasAny(entitlementKeys());
+      // Create: a plain profile doc (no entitlement fields at all), OR a one-time
+      // trial doc holding only the trial fields.
+      allow create: if isOwner(uid) && (
+             !request.resource.data.keys().hasAny(allEntitlementKeys())
+          || ( request.resource.data.keys().hasOnly(trialKeys()) && trialWindowOk() )
+      );
 
-      // A user may update their own doc (e.g. display name) but never an
-      // entitlement field. Admins change entitlements through the Cloud
-      // Function, not by direct client writes, so no admin exception here.
-      allow update: if isOwner(uid) && !touchesEntitlement();
+      // Update: touches neither paid/admin nor trial fields, OR a one-time trial
+      // bootstrap on an account that has no trial yet.
+      allow update: if isOwner(uid) && (
+             ( !changed().hasAny(protectedKeys()) && !changed().hasAny(trialKeys()) )
+          || ( !('trialEndsAt' in resource.data)
+               && changed().hasOnly(trialKeys())
+               && trialWindowOk() )
+      );
 
       allow delete: if false;
 
