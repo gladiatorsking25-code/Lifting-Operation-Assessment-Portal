@@ -47,6 +47,8 @@
     <div class="content">
       <div id="disclaimer-banner"></div>
 
+      <div id="subscription-panel"></div>
+
       <div class="grid grid-4" id="stat-cards"></div>
 
       <div class="section-title">Permits expiring soon</div>
@@ -68,6 +70,60 @@
 renderSidebar('index');
 renderDisclaimer('disclaimer-banner');
 renderFooter('app-footer');
+
+// Subscription / trial status on the dashboard. Live-updates from the server
+// entitlement doc. Hidden entirely in local mode (Firebase not configured).
+function renderSubscriptionPanel() {
+  const host = document.getElementById('subscription-panel');
+  if (!host) return;
+  if (typeof Access === 'undefined' || !Access.firebaseOn()) { host.innerHTML = ''; return; }
+  const escp = (v) => String(v == null ? '' : v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  Access.armAuthWatch(function (user, access, doc) {
+    if (!user || !access) { host.innerHTML = ''; return; }
+    const st = access.state;
+    const email = user.email || '';
+    let title = '', detail = '', actions = '';
+    if (st === 'admin') {
+      title = 'Administrator account';
+      detail = 'Full access to Duck HSE Portal.';
+      actions = '<a class="btn btn-sm btn-primary" href="admin.html">Admin dashboard</a>';
+    } else if (st === 'trial') {
+      const left = Entitlements.daysLeft(access.until);
+      title = 'Free trial';
+      detail = `${left} day${left === 1 ? '' : 's'} left. Subscribe to keep access when the trial ends.`;
+      actions = '<a class="btn btn-sm btn-primary" href="subscribe.html">Subscribe</a>';
+    } else if (st === 'active' || st === 'granted') {
+      title = 'Subscription active';
+      detail = access.until ? ('Renews / expires ' + new Date(access.until).toLocaleDateString() + '.') : 'Your subscription is active.';
+      actions = '<a class="btn btn-sm" href="subscribe.html">Manage</a>';
+    } else if (st === 'locked' || st === 'expired') {
+      title = 'Subscription needed';
+      detail = 'Your free trial has ended. Subscribe to continue.';
+      actions = '<a class="btn btn-sm btn-primary" href="subscribe.html">Subscribe</a>';
+    } else if (st === 'pending') {
+      title = 'Finishing account setup…';
+      detail = 'Your trial and subscription details will appear here shortly.';
+      actions = '<a class="btn btn-sm" href="index.html">Refresh</a>';
+    } else {
+      title = 'Subscription';
+      detail = 'Status is unavailable right now.';
+      actions = '<a class="btn btn-sm" href="subscribe.html">Subscribe</a>';
+    }
+    // Admins always get the admin link even when another state is shown.
+    if (doc && doc.role === 'admin' && st !== 'admin') {
+      actions = '<a class="btn btn-sm" href="admin.html">Admin</a>' + actions;
+    }
+    host.innerHTML = `<div class="sub-panel state-${escp(st)}">
+      <div class="sub-panel-main">
+        <div class="sub-panel-title">${escp(title)}</div>
+        <div class="sub-panel-detail">${escp(detail)}</div>
+        <div class="sub-panel-email">${escp(email)}</div>
+      </div>
+      <div class="sub-panel-actions">${actions}</div>
+    </div>`;
+  });
+}
+renderSubscriptionPanel();
 
 const assessments = DB.getAssessments().sort((a,b) => new Date(b.date) - new Date(a.date));
 const permits = DB.getPermits();

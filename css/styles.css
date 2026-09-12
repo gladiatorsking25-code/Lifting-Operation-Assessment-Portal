@@ -406,6 +406,22 @@ body.printing-modal #lightboxRoot .modal {
 .nav-sub-line a { color: var(--amber); font-weight: 700; text-decoration: none; }
 .nav-sub-line a:hover { text-decoration: underline; }
 
+/* ---------- Dashboard subscription panel ---------- */
+.sub-panel {
+  display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;
+  background: #fff; border: 1px solid var(--line); border-left-width: 4px;
+  border-radius: var(--radius); padding: 15px 20px; margin-bottom: 18px;
+}
+.sub-panel.state-trial { border-left-color: var(--amber); }
+.sub-panel.state-active, .sub-panel.state-granted { border-left-color: var(--ok-green); }
+.sub-panel.state-locked, .sub-panel.state-expired { border-left-color: var(--danger-red); }
+.sub-panel.state-admin { border-left-color: var(--navy-700); }
+.sub-panel.state-pending, .sub-panel.state-unknown { border-left-color: var(--steel-200); }
+.sub-panel-title { font-weight: 700; font-size: 15px; }
+.sub-panel-detail { font-size: 13px; color: var(--ink-soft); margin-top: 2px; }
+.sub-panel-email { font-size: 11.5px; color: var(--ink-soft); font-family: var(--font-mono); margin-top: 4px; }
+.sub-panel-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
 /* ---------- Offline payment (paywall) ---------- */
 .pay-offline { margin-top: 16px; border-top: 1px solid var(--line); padding-top: 14px; }
 .pay-offline summary { cursor: pointer; font-weight: 600; font-size: 13.5px; color: var(--navy-700); list-style-position: inside; }

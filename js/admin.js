@@ -129,7 +129,20 @@
   Access.handleAdminPage((ctx) => {
     if (!ctx.configured) return;
     if (!ctx.isAdmin) {
-      $('adminGate').innerHTML = '<div class="banner banner-danger"><div><strong>Not authorized.</strong> This page is for administrators only.</div></div>';
+      const email = ctx.user ? (ctx.user.email || '') : '';
+      const uid = ctx.user ? ctx.user.uid : '';
+      $('adminGate').innerHTML = `<div class="banner banner-warn"><div>
+        <strong>This account isn’t an administrator yet.</strong>
+        Signed in as ${esc(email)} <span class="hint num">(${esc(uid)})</span>.
+        <br><br>To make it the owner/admin, do this once in the Firebase Console:
+        <ol style="margin:8px 0 0; padding-left:20px;">
+          <li>Firestore Database → the <span class="num">users</span> collection → open the document with ID <strong class="num">${esc(uid)}</strong>
+            (create it if it isn’t there yet — that means the Cloud Functions haven’t been deployed).</li>
+          <li>Add/set a field <strong>role</strong> (string) = <strong>admin</strong>.</li>
+          <li>Reload this page.</li>
+        </ol>
+        After the first admin, you can promote others from this dashboard.
+      </div></div>`;
       $('adminBody').hidden = true;
       return;
     }
