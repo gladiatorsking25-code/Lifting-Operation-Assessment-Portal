@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script src="js/auth.js"></script>
+<script src="js/consent.js"></script>
+<script>requireConsent();</script>
+<script src="js/firebase-config.js"></script>
+<script src="js/firebase-init.js"></script>
+<script src="js/firebase-auth.js"></script>
+<script src="js/subscription-config.js"></script>
+<script src="js/entitlements.js"></script>
+<script src="js/access.js"></script>
+<script>requireAccess();</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Log entry · Duck HSE Portal</title>
+<link rel="stylesheet" href="css/styles.css">
+<!-- Installable-app / PWA metadata (see manifest.webmanifest, sw.js, js/pwa.js) -->
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#16283a">
+<meta name="color-scheme" content="light">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Duck HSE">
+<meta name="description" content="Record or edit a project log entry with the activity, location, status and the people involved.">
+<link rel="icon" href="assets/icons/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
+<link rel="apple-touch-icon" href="assets/icons/apple-touch-icon-180.png">
+<script src="js/app-version.js"></script>
+<style>
+  .people-list { display: flex; flex-direction: column; gap: 10px; }
+  .person-row { display: grid; grid-template-columns: 1fr 1fr auto; gap: 10px; align-items: end; }
+  .person-row .btn-remove { padding: 9px 12px; }
+  @media (max-width: 620px) { .person-row { grid-template-columns: 1fr 1fr; } .person-row .btn-remove { grid-column: 1 / -1; } }
+  .view-field { margin-bottom: 14px; }
+  .view-field .k { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--ink-soft); }
+  .view-field .v { font-size: 14.5px; margin-top: 3px; white-space: pre-wrap; }
+  .people-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
+  .person-chip { display: inline-flex; flex-direction: column; border: 1px solid var(--line); border-radius: var(--radius); padding: 7px 11px; background: #fff; }
+  .person-chip .pn { font-weight: 600; font-size: 13.5px; }
+  .person-chip .pr { font-size: 11.5px; color: var(--ink-soft); }
+</style>
+</head>
+<body>
+<div class="app-shell">
+  <aside class="sidebar no-print" id="sidebar"></aside>
+  <div class="main">
+    <div class="topbar no-print">
+      <div>
+        <h2 id="pageTitle">New log entry</h2>
+        <div class="crumb" id="pageCrumb">Record project activity</div>
+      </div>
+      <div style="display:flex; gap:10px;">
+        <button class="btn" id="btnPrint" style="display:none;">Print / Save as PDF</button>
+        <a class="btn" id="btnEdit" href="#" style="display:none;">Edit</a>
+        <a class="btn" href="logs.html">All logs</a>
+      </div>
+    </div>
+
+    <div class="content" id="logContent">
+      <div id="statusBanner"></div>
+
+      <!-- ===== Edit / create form ===== -->
+      <div class="card" id="formCard">
+        <div class="section-title" style="margin-top:0;">Entry</div>
+        <div class="form-grid">
+          <div class="field"><label for="projectId">Project</label>
+            <select id="projectId"><option value="">— Unassigned —</option></select>
+          </div>
+          <div class="field"><label for="date">Date &amp; time</label><input type="datetime-local" id="date"></div>
+          <div class="field"><label for="category">Category</label>
+            <select id="category"></select>
+          </div>
+          <div class="field"><label for="status">Follow-up status</label>
+            <select id="status">
+              <option value="">— None —</option>
+              <option value="open">Open (needs follow-up)</option>
+              <option value="closed">Closed / done</option>
+              <option value="info">Info only</option>
+            </select>
+          </div>
+          <div class="field full"><label for="title">Summary</label><input type="text" id="title" placeholder="e.g. Tandem lift of 24 t transformer to level 3"></div>
+          <div class="field full"><label for="details">Details</label><textarea id="details" placeholder="What happened, decisions taken, conditions, issues…"></textarea></div>
+          <div class="field"><label for="location">Location / area</label><input type="text" id="location"></div>
+          <div class="field"><label for="reference">Reference (permit #, RA #, doc no.)</label><input type="text" id="reference"></div>
+          <div class="field"><label for="loggedBy">Logged by</label><input type="text" id="loggedBy"></div>
+          <div class="field"><label for="documentUrl">Document link (in Drive folder)</label><input type="text" id="documentUrl" placeholder="https://drive.google.com/…"></div>
+        </div>
+
+        <div class="section-title">People involved</div>
+        <p class="hint" style="margin:-4px 0 12px;">Add everyone relevant — operator, banksman/signaller, rigger, appointed person, supervisor, visitor. This is what makes the log searchable by person.</p>
+        <div class="people-list" id="peopleList"></div>
+        <div style="margin-top:12px;"><button class="btn btn-sm" id="btnAddPerson" type="button">+ Add person</button></div>
+      </div>
+
+      <!-- ===== Read-only view ===== -->
+      <div class="card" id="viewCard" style="display:none;"></div>
+
+      <div class="footer-note no-print" id="validationErrors"></div>
+
+      <div style="margin-top:20px; display:flex; gap:10px;" class="no-print" id="actionRow">
+        <button class="btn btn-primary" id="btnSave">Save log entry</button>
+        <a class="btn" id="btnCancel" href="logs.html">Cancel</a>
+      </div>
+
+      <div id="app-footer"></div>
+    </div>
+  </div>
+</div>
+
+<script src="js/crane-data.js"></script>
+<script src="js/storage.js"></script>
+<script src="js/cloud-sync.js"></script>
+<script src="js/nav.js"></script>
+<script>
+renderSidebar('logs');
+renderFooter('app-footer');
+
+function esc(v) {
+  return String(v == null ? '' : v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function safeUrl(u) { const s = String(u || '').trim(); return /^https?:\/\//i.test(s) ? s : ''; }
+const F = id => document.getElementById(id);
+const CATEGORIES = ['Lift', 'Delivery', 'Inspection', 'Toolbox talk', 'Incident', 'Site visit', 'Meeting', 'Progress', 'Note'];
+
+// datetime-local wants local "YYYY-MM-DDTHH:mm"; we store ISO.
+function toLocalInput(iso) {
+  const d = iso ? new Date(iso) : new Date();
+  if (isNaN(d)) return '';
+  const pad = n => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+const params = new URLSearchParams(location.search);
+const editingId = params.get('id');
+const viewMode = params.get('mode') === 'view';
+const presetProject = params.get('project') || '';
+
+let current = editingId ? DB.getLog(editingId) : null;
+if (editingId && !current) {
+  F('statusBanner').innerHTML = '<div class="banner banner-danger">Log entry not found. It may have been deleted. <a href="logs.html">Back to logs</a>.</div>';
+}
+
+// Populate the project + category selects.
+const projects = DB.getProjects().sort((a,b) => (a.name||'').localeCompare(b.name||''));
+projects.forEach(p => { const o = document.createElement('option'); o.value = p.id; o.textContent = p.name || '(untitled project)'; F('projectId').appendChild(o); });
+CATEGORIES.forEach(c => { const o = document.createElement('option'); o.value = c; o.textContent = c; F('category').appendChild(o); });
+
+// People state.
+let people = current && Array.isArray(current.people) ? current.people.map(p => ({ name: p.name || '', role: p.role || '' })) : [];
+
+function renderPeople() {
+  const host = F('peopleList');
+  if (!people.length) {
+    host.innerHTML = '<p class="hint" style="margin:0;">No people added yet.</p>';
+    return;
+  }
+  host.innerHTML = people.map((p, i) => `
+    <div class="person-row">
+      <div class="field" style="gap:4px;"><label>Name</label><input type="text" data-i="${i}" data-k="name" value="${esc(p.name)}" placeholder="Full name"></div>
+      <div class="field" style="gap:4px;"><label>Role</label><input type="text" data-i="${i}" data-k="role" value="${esc(p.role)}" placeholder="e.g. Banksman, Operator"></div>
+      <button class="btn btn-sm btn-danger btn-remove" type="button" data-remove="${i}">Remove</button>
+    </div>
+  `).join('');
+  host.querySelectorAll('input[data-i]').forEach(inp => {
+    inp.addEventListener('input', e => {
+      const i = +e.target.dataset.i, k = e.target.dataset.k;
+      people[i][k] = e.target.value;
+    });
+  });
+  host.querySelectorAll('button[data-remove]').forEach(btn => {
+    btn.addEventListener('click', e => { people.splice(+e.target.dataset.remove, 1); renderPeople(); });
+  });
+}
+
+if (current) {
+  F('projectId').value = current.projectId || '';
+  F('date').value = toLocalInput(current.date);
+  F('category').value = current.category || 'Note';
+  F('status').value = current.status || '';
+  ['title','details','location','reference','loggedBy','documentUrl'].forEach(k => { if (current[k] != null) F(k).value = current[k]; });
+} else {
+  F('date').value = toLocalInput(null);
+  F('category').value = 'Note';
+  if (presetProject) F('projectId').value = presetProject;
+}
+renderPeople();
+
+F('btnAddPerson').addEventListener('click', () => { people.push({ name: '', role: '' }); renderPeople(); });
+
+// ===== View mode =====
+function renderView() {
+  const proj = current.projectId ? DB.getProject(current.projectId) : null;
+  const rows = [];
+  const row = (k, v) => { if (v) rows.push(`<div class="view-field"><div class="k">${k}</div><div class="v">${v}</div></div>`); };
+  row('Project', proj ? `<a href="project.html?id=${encodeURIComponent(proj.id)}&mode=view">${esc(proj.name)}</a>` : 'Unassigned');
+  row('Date &amp; time', fmtDate(current.date));
+  row('Category', esc(current.category));
+  if (current.status) row('Status', esc(current.status.charAt(0).toUpperCase() + current.status.slice(1)));
+  row('Summary', esc(current.title));
+  row('Details', esc(current.details));
+  row('Location / area', esc(current.location));
+  row('Reference', esc(current.reference));
+  row('Logged by', esc(current.loggedBy));
+  const doc = safeUrl(current.documentUrl);
+  if (doc) row('Document', `<a href="${esc(doc)}" target="_blank" rel="noopener">${esc(current.documentUrl)}</a>`);
+  const ppl = (current.people || []).filter(p => p.name || p.role);
+  const peopleHtml = ppl.length
+    ? `<div class="people-chips">${ppl.map(p => `<span class="person-chip"><span class="pn">${esc(p.name) || '—'}</span>${p.role ? `<span class="pr">${esc(p.role)}</span>` : ''}</span>`).join('')}</div>`
+    : '';
+  F('viewCard').innerHTML = `<div class="section-title" style="margin-top:0;">${esc(current.title) || 'Log entry'}</div>${rows.join('')}${peopleHtml ? `<div class="view-field"><div class="k">People involved</div>${peopleHtml}</div>` : ''}`;
+}
+
+if (viewMode && current) {
+  F('formCard').style.display = 'none';
+  F('viewCard').style.display = '';
+  F('actionRow').style.display = 'none';
+  F('pageTitle').textContent = current.title || 'Log entry';
+  F('pageCrumb').textContent = 'Log entry';
+  document.title = (current.title || 'Log entry') + ' · Duck HSE Portal';
+  F('btnEdit').style.display = ''; F('btnEdit').href = 'log.html?id=' + encodeURIComponent(current.id);
+  F('btnPrint').style.display = '';
+  F('btnPrint').addEventListener('click', () => window.print());
+  renderView();
+} else if (current) {
+  F('pageTitle').textContent = 'Edit log entry';
+  F('pageCrumb').textContent = 'Update project activity';
+}
+
+function save() {
+  const errs = F('validationErrors');
+  const title = F('title').value.trim();
+  const dateVal = F('date').value;
+  if (!title) { errs.innerHTML = '<div class="banner banner-danger" style="margin:0;">Please enter a short summary for this entry.</div>'; F('title').focus(); return; }
+  if (!dateVal) { errs.innerHTML = '<div class="banner banner-danger" style="margin:0;">Please set the date and time.</div>'; F('date').focus(); return; }
+  const docUrl = F('documentUrl').value.trim();
+  if (docUrl && !safeUrl(docUrl)) { errs.innerHTML = '<div class="banner banner-danger" style="margin:0;">The document link should start with http:// or https://</div>'; F('documentUrl').focus(); return; }
+  errs.innerHTML = '';
+
+  const log = Object.assign({}, current || {});
+  log.projectId = F('projectId').value;
+  log.date = new Date(dateVal).toISOString();
+  log.category = F('category').value;
+  log.status = F('status').value;
+  log.title = title;
+  log.details = F('details').value.trim();
+  log.location = F('location').value.trim();
+  log.reference = F('reference').value.trim();
+  log.loggedBy = F('loggedBy').value.trim();
+  log.documentUrl = docUrl;
+  log.people = people.map(p => ({ name: (p.name||'').trim(), role: (p.role||'').trim() })).filter(p => p.name || p.role);
+  DB.saveLog(log);
+
+  const back = log.projectId ? 'logs.html?project=' + encodeURIComponent(log.projectId) : 'logs.html';
+  location.href = back;
+}
+if (!viewMode) {
+  F('btnSave').addEventListener('click', save);
+  if (presetProject) F('btnCancel').href = 'logs.html?project=' + encodeURIComponent(presetProject);
+}
+</script>
+<script src="js/pwa.js"></script>
+</body>
+</html>

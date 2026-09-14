@@ -75,3 +75,13 @@ test('stale tabs cannot save one user records under another user session', async
   const { portal, a, b } = await fixture();
   await assert.rejects(portal.call('saveRecord', { expectedUid: a.user.uid, collection: 'assessments', record: { id: 'A-1' } }, b.sessionToken), { status: 409 });
 });
+test('projects and logs are valid, account-isolated collections', async () => {
+  const { portal, a, b } = await fixture();
+  await portal.call('saveRecord', { expectedUid: a.user.uid, collection: 'projects', record: { id: 'PRJ-1', name: 'Marina Tower' } }, a.sessionToken);
+  await portal.call('saveRecord', { expectedUid: a.user.uid, collection: 'logs', record: { id: 'LOG-1', projectId: 'PRJ-1', title: 'Lift', people: [{ name: 'Ali', role: 'Operator' }] } }, a.sessionToken);
+  assert.equal((await portal.call('records', { expectedUid: a.user.uid, collection: 'projects' }, a.sessionToken)).records.length, 1);
+  assert.equal((await portal.call('records', { expectedUid: a.user.uid, collection: 'logs' }, a.sessionToken)).records[0].people[0].name, 'Ali');
+  // Another account sees none of it, and an unknown collection is still rejected.
+  assert.equal((await portal.call('records', { expectedUid: b.user.uid, collection: 'logs' }, b.sessionToken)).records.length, 0);
+  await assert.rejects(portal.call('records', { expectedUid: a.user.uid, collection: 'diaries' }, a.sessionToken));
+});

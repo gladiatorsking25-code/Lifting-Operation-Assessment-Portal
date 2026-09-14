@@ -1,7 +1,7 @@
 // Durable per-account queue. Failed requests remain queued until a later successful sync.
 const CloudSync = (() => {
   let uid = null, timer = null, generation = 0, busy = false;
-  const collections = ['assessments', 'permits', 'checklists'];
+  const collections = ['assessments', 'permits', 'checklists', 'projects', 'logs'];
   const queueKey = user => `cla_sheets_queue:${user}`;
   function queue(user) { try { return JSON.parse(localStorage.getItem(queueKey(user)) || '[]'); } catch { return []; } }
   function status(message) {

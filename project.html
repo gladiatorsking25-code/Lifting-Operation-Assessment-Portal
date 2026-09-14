@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script src="js/auth.js"></script>
+<script src="js/consent.js"></script>
+<script>requireConsent();</script>
+<script src="js/firebase-config.js"></script>
+<script src="js/firebase-init.js"></script>
+<script src="js/firebase-auth.js"></script>
+<script src="js/subscription-config.js"></script>
+<script src="js/entitlements.js"></script>
+<script src="js/access.js"></script>
+<script>requireAccess();</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Project · Duck HSE Portal</title>
+<link rel="stylesheet" href="css/styles.css">
+<!-- Installable-app / PWA metadata (see manifest.webmanifest, sw.js, js/pwa.js) -->
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#16283a">
+<meta name="color-scheme" content="light">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Duck HSE">
+<meta name="description" content="Create or edit a lifting-operation project, its Google Drive document folder and its activity log.">
+<link rel="icon" href="assets/icons/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
+<link rel="apple-touch-icon" href="assets/icons/apple-touch-icon-180.png">
+<script src="js/app-version.js"></script>
+</head>
+<body>
+<div class="app-shell">
+  <aside class="sidebar no-print" id="sidebar"></aside>
+  <div class="main">
+    <div class="topbar no-print">
+      <div>
+        <h2 id="pageTitle">New project</h2>
+        <div class="crumb" id="pageCrumb">Set up a project and its document folder</div>
+      </div>
+      <div style="display:flex; gap:10px;">
+        <a class="btn" id="btnEdit" href="#" style="display:none;">Edit</a>
+        <a class="btn" href="projects.html">All projects</a>
+      </div>
+    </div>
+
+    <div class="content">
+      <div id="statusBanner"></div>
+
+      <div class="card">
+        <div class="section-title" style="margin-top:0;">Project details</div>
+        <div class="form-grid">
+          <div class="field"><label for="name">Project name</label><input type="text" id="name" placeholder="e.g. Marina Tower — Phase 2"></div>
+          <div class="field"><label for="projectNumber">Project number / code</label><input type="text" id="projectNumber" placeholder="e.g. PRJ-2026-014"></div>
+          <div class="field"><label for="client">Client</label><input type="text" id="client"></div>
+          <div class="field"><label for="location">Location / site</label><input type="text" id="location"></div>
+          <div class="field"><label for="status">Status</label>
+            <select id="status">
+              <option value="active">Active</option>
+              <option value="on-hold">On hold</option>
+              <option value="completed">Completed</option>
+            </select>
+          </div>
+          <div class="field"><label for="startDate">Start date</label><input type="date" id="startDate"></div>
+          <div class="field"><label for="manager">Project manager / in charge</label><input type="text" id="manager"></div>
+          <div class="field"><label for="contractor">Main contractor</label><input type="text" id="contractor"></div>
+          <div class="field full"><label for="description">Description / scope</label><textarea id="description" placeholder="What this project covers"></textarea></div>
+        </div>
+
+        <div class="section-title">Documents &amp; linked sources</div>
+        <p class="hint" style="margin:-4px 0 12px;">Paste the shareable link to this project's Google Drive folder so every document (permits, certificates, reports, photos) is filed there. You can also link a Google Sheet used as this project's log.</p>
+        <div class="form-grid">
+          <div class="field full"><label for="driveFolderUrl">Google Drive folder link</label><input type="text" id="driveFolderUrl" placeholder="https://drive.google.com/drive/folders/…"></div>
+          <div class="field full"><label for="sheetUrl">Linked log spreadsheet (optional)</label><input type="text" id="sheetUrl" placeholder="https://docs.google.com/spreadsheets/d/…"></div>
+        </div>
+        <div id="linkButtons" class="viz-actions" style="margin-top:12px;"></div>
+      </div>
+
+      <div class="footer-note no-print" id="validationErrors"></div>
+
+      <div style="margin-top:20px; display:flex; gap:10px;" class="no-print" id="actionRow">
+        <button class="btn btn-primary" id="btnSave">Save project</button>
+        <a class="btn" href="projects.html">Cancel</a>
+      </div>
+
+      <div id="logsCard" style="display:none; margin-top:22px;">
+        <div class="topbar" style="padding:0; border:none; background:none; margin-bottom:12px;">
+          <div><div class="section-title" style="margin:0; border:none; padding:0;">Project log</div></div>
+          <a class="btn btn-sm btn-primary no-print" id="btnAddLog" href="#">+ Add log entry</a>
+        </div>
+        <div id="logsWrap"></div>
+      </div>
+
+      <div id="app-footer"></div>
+    </div>
+  </div>
+</div>
+
+<script src="js/crane-data.js"></script>
+<script src="js/storage.js"></script>
+<script src="js/cloud-sync.js"></script>
+<script src="js/nav.js"></script>
+<script>
+renderSidebar('projects');
+renderFooter('app-footer');
+
+function esc(v) {
+  return String(v == null ? '' : v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function safeUrl(u) {
+  const s = String(u || '').trim();
+  return /^https?:\/\//i.test(s) ? s : '';
+}
+const params = new URLSearchParams(location.search);
+const editingId = params.get('id');
+const viewMode = params.get('mode') === 'view';
+const F = id => document.getElementById(id);
+const FIELDS = ['name','projectNumber','client','location','status','startDate','manager','contractor','description','driveFolderUrl','sheetUrl'];
+
+let current = editingId ? DB.getProject(editingId) : null;
+if (editingId && !current) {
+  F('statusBanner').innerHTML = '<div class="banner banner-danger">Project not found. It may have been deleted. <a href="projects.html">Back to projects</a>.</div>';
+}
+
+if (current) {
+  FIELDS.forEach(k => { if (F(k) != null && current[k] != null) F(k).value = current[k]; });
+  F('pageTitle').textContent = viewMode ? (current.name || 'Project') : 'Edit project';
+  F('pageCrumb').textContent = viewMode ? 'Project overview' : 'Update project details';
+  document.title = (current.name || 'Project') + ' · Duck HSE Portal';
+}
+
+// Read-only view mode: lock the inputs and swap the action row for an Edit link.
+if (viewMode && current) {
+  FIELDS.forEach(k => { if (F(k)) { F(k).setAttribute('readonly', 'readonly'); F(k).setAttribute('disabled', 'disabled'); } });
+  F('actionRow').style.display = 'none';
+  const be = F('btnEdit');
+  be.style.display = '';
+  be.href = 'project.html?id=' + encodeURIComponent(current.id);
+}
+
+// Quick-open buttons for the Drive folder / linked sheet.
+function renderLinkButtons() {
+  const drive = safeUrl(viewMode ? (current && current.driveFolderUrl) : F('driveFolderUrl').value);
+  const sheet = safeUrl(viewMode ? (current && current.sheetUrl) : F('sheetUrl').value);
+  const host = F('linkButtons');
+  let html = '';
+  if (drive) html += `<a class="btn btn-sm" href="${esc(drive)}" target="_blank" rel="noopener">📁 Open Drive folder</a>`;
+  if (sheet) html += `<a class="btn btn-sm" href="${esc(sheet)}" target="_blank" rel="noopener">📊 Open log sheet</a>`;
+  host.innerHTML = html;
+}
+renderLinkButtons();
+if (!viewMode) {
+  F('driveFolderUrl').addEventListener('input', renderLinkButtons);
+  F('sheetUrl').addEventListener('input', renderLinkButtons);
+}
+
+// Existing project: show its log entries beneath the form.
+function renderProjectLogs() {
+  if (!current) return;
+  F('logsCard').style.display = '';
+  F('btnAddLog').href = 'log.html?project=' + encodeURIComponent(current.id);
+  const logs = DB.getLogsForProject(current.id).sort((a,b) => new Date(b.date||0) - new Date(a.date||0));
+  const wrap = F('logsWrap');
+  if (!logs.length) {
+    wrap.innerHTML = `<div class="card empty-state"><div class="icon">📝</div>No log entries yet for this project. <a href="log.html?project=${encodeURIComponent(current.id)}">Add the first one</a>.</div>`;
+    return;
+  }
+  wrap.innerHTML = `
+    <table class="data-table">
+      <thead><tr><th>Date</th><th>Category</th><th>Entry</th><th>People</th><th></th></tr></thead>
+      <tbody>
+        ${logs.slice(0, 25).map(l => {
+          const people = (l.people || []).map(p => p.name).filter(Boolean).join(', ');
+          return `<tr>
+            <td class="num">${fmtDate(l.date)}</td>
+            <td>${esc(l.category) || '—'}</td>
+            <td>${esc(l.title) || '—'}</td>
+            <td>${esc(people) || '—'}</td>
+            <td style="white-space:nowrap;"><a class="btn btn-sm" href="log.html?id=${encodeURIComponent(l.id)}&mode=view">View</a></td>
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table>
+    ${logs.length > 25 ? `<p class="hint" style="margin-top:10px;">Showing the 25 most recent of ${logs.length}. <a href="logs.html?project=${encodeURIComponent(current.id)}">See all in Project logs</a>.</p>` : ''}
+  `;
+}
+renderProjectLogs();
+
+function save() {
+  const errs = F('validationErrors');
+  const name = F('name').value.trim();
+  if (!name) { errs.innerHTML = '<div class="banner banner-danger" style="margin:0;">Please enter a project name.</div>'; F('name').focus(); return; }
+  const drive = F('driveFolderUrl').value.trim();
+  const sheet = F('sheetUrl').value.trim();
+  if (drive && !safeUrl(drive)) { errs.innerHTML = '<div class="banner banner-danger" style="margin:0;">The Drive folder link should start with http:// or https://</div>'; F('driveFolderUrl').focus(); return; }
+  if (sheet && !safeUrl(sheet)) { errs.innerHTML = '<div class="banner banner-danger" style="margin:0;">The spreadsheet link should start with http:// or https://</div>'; F('sheetUrl').focus(); return; }
+  errs.innerHTML = '';
+
+  const project = Object.assign({}, current || {});
+  FIELDS.forEach(k => { project[k] = F(k).value.trim(); });
+  DB.saveProject(project);
+  location.href = 'project.html?id=' + encodeURIComponent(project.id) + '&mode=view';
+}
+if (!viewMode) F('btnSave').addEventListener('click', save);
+</script>
+<script src="js/pwa.js"></script>
+</body>
+</html>

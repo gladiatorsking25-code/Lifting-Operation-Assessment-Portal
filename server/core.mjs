@@ -134,7 +134,7 @@ export class Portal {
     }
     if (data.expectedUid !== user.uid) fail('Account changed. Reload this page before syncing.', 409);
     if (!hasAccess(user, this.now())) fail('An active trial or subscription is required.', 403);
-    if (!['assessments', 'permits', 'checklists'].includes(data.collection)) fail('Unknown record collection.');
+    if (!['assessments', 'permits', 'checklists', 'projects', 'logs'].includes(data.collection)) fail('Unknown record collection.');
     const prefix = `${user.uid}/${data.collection}/`;
     if (action === 'records') return { records: (await this.store.list('PortalRecords')).filter(r => r.key.startsWith(prefix)).map(r => r.value) };
     if (!['saveRecord', 'deleteRecord'].includes(action)) fail('Unknown action.');

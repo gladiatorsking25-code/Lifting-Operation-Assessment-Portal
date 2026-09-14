@@ -156,7 +156,7 @@ document.getElementById('fileImport').addEventListener('change', (e) => {
       const data = JSON.parse(reader.result);
       const mode = confirm('Click OK to MERGE with existing data, or Cancel to REPLACE all existing data with this backup.') ? 'merge' : 'replace';
       DB.importAll(data, mode);
-      document.getElementById('importResult').innerHTML = `<div class="banner banner-ok">Import complete (${mode}). ${((data.assessments||[]).length)} assessments, ${((data.permits||[]).length)} permits in the file.</div>`;
+      document.getElementById('importResult').innerHTML = `<div class="banner banner-ok">Import complete (${mode}). ${((data.assessments||[]).length)} assessments, ${((data.permits||[]).length)} permits, ${((data.projects||[]).length)} projects, ${((data.logs||[]).length)} log entries in the file.</div>`;
     } catch (err) {
       document.getElementById('importResult').innerHTML = `<div class="banner banner-danger">Could not read that file: ${err.message}</div>`;
     }
@@ -165,12 +165,14 @@ document.getElementById('fileImport').addEventListener('change', (e) => {
 });
 
 document.getElementById('btnClear').addEventListener('click', () => {
-  if (!confirm('This permanently deletes ALL assessments and permits stored in this browser. Export a backup first if you have not already. Continue?')) return;
+  if (!confirm('This permanently deletes ALL data stored in this browser — assessments, permits, checklists, projects and project logs. Export a backup first if you have not already. Continue?')) return;
   if (!confirm('Are you absolutely sure? This cannot be undone.')) return;
   localStorage.removeItem(DB.KEYS.assessments);
   localStorage.removeItem(DB.KEYS.permits);
   localStorage.removeItem(DB.KEYS.counter);
   localStorage.removeItem(DB.KEYS.checklists);
+  localStorage.removeItem(DB.KEYS.projects);
+  localStorage.removeItem(DB.KEYS.logs);
   // Certificate photos live in IndexedDB, not localStorage — drop that store too.
   try { indexedDB.deleteDatabase('cla_certificate_store_v1'); } catch (e) { /* ignore */ }
   alert('All local data erased.');

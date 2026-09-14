@@ -13,8 +13,10 @@
 // No-ops entirely when Firebase isn't configured (FIREBASE_READY is false).
 
 const CloudSync = (function () {
-  let unsubAssessments = null;
-  let unsubPermits = null;
+  // Every localStorage-backed collection js/storage.js pushes is mirrored back
+  // down here, so a record created on one device shows up on another.
+  const COLLECTIONS = ['assessments', 'permits', 'checklists', 'projects', 'logs'];
+  let unsubs = [];
   let currentUid = null;
 
   function userCollection(uid, name) {
@@ -41,20 +43,14 @@ const CloudSync = (function () {
       await firebaseReadyPromise;
       currentUid = uid;
 
-      unsubAssessments = userCollection(uid, 'assessments').onSnapshot(snap => {
-        mergeIncoming(DB.KEYS.assessments, snap.docs.map(d => Object.assign({ id: d.id }, d.data())));
-      }, err => console.error('Assessment cloud sync error', err));
-
-      unsubPermits = userCollection(uid, 'permits').onSnapshot(snap => {
-        mergeIncoming(DB.KEYS.permits, snap.docs.map(d => Object.assign({ id: d.id }, d.data())));
-      }, err => console.error('Permit cloud sync error', err));
+      unsubs = COLLECTIONS.map(name => userCollection(uid, name).onSnapshot(snap => {
+        mergeIncoming(DB.KEYS[name], snap.docs.map(d => Object.assign({ id: d.id }, d.data())));
+      }, err => console.error(name + ' cloud sync error', err)));
     },
 
     stop() {
-      if (unsubAssessments) unsubAssessments();
-      if (unsubPermits) unsubPermits();
-      unsubAssessments = null;
-      unsubPermits = null;
+      unsubs.forEach(fn => { try { fn(); } catch (e) { /* already detached */ } });
+      unsubs = [];
       currentUid = null;
     },
 

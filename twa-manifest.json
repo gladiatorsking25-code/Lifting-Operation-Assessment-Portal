@@ -24,8 +24,8 @@
   "iconUrl": "https://HOST_DOMAIN/assets/icons/icon-512.png",
   "maskableIconUrl": "https://HOST_DOMAIN/assets/icons/icon-maskable-512.png",
   "splashScreenFadeOutDuration": 300,
-  "appVersionName": "1.5.4",
-  "appVersionCode": 11,
+  "appVersionName": "1.6.0",
+  "appVersionCode": 12,
   "shortcuts": [
     {
       "name": "New assessment",
@@ -44,6 +44,12 @@
       "shortName": "History",
       "url": "/history.html",
       "chosenIconUrl": "https://HOST_DOMAIN/assets/icons/icon-192.png"
+    },
+    {
+      "name": "Project logs",
+      "shortName": "Logs",
+      "url": "/logs.html",
+      "chosenIconUrl": "https://HOST_DOMAIN/assets/icons/icon-192.png"
     }
   ],
   "generatorApp": "bubblewrap-cli",
@@ -58,7 +64,7 @@
   "isMetaQuest": false,
   "fullScopeUrl": "https://HOST_DOMAIN/",
   "minSdkVersion": 21,
-  "appVersion": "1.5.4",
+  "appVersion": "1.6.0",
   "signingKey": {
     "path": "./android.keystore",
     "alias": "android"

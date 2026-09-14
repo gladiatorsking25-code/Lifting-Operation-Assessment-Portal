@@ -8,7 +8,9 @@ const DB = {
     assessments: 'cla_assessments',
     permits: 'cla_permits',
     counter: 'cla_permit_counter',
-    checklists: 'cla_checklists'
+    checklists: 'cla_checklists',
+    projects: 'cla_projects',
+    logs: 'cla_logs'
   },
 
   _get(key) {
@@ -118,37 +120,107 @@ const DB = {
     this._cloudRemove('checklists', id);
   },
 
+  // ---- Projects ----
+  // A project is the top-level container the app organises work under. Every
+  // log entry (and, in future, assessments/permits) can belong to a project,
+  // and each project can point at its own Google Drive folder + linked log
+  // sheet so documents are filed per project.
+  getProjects() {
+    return this._get(this.KEYS.projects);
+  },
+  getProject(id) {
+    return this.getProjects().find(p => p.id === id) || null;
+  },
+  saveProject(project) {
+    const list = this.getProjects();
+    const idx = project.id ? list.findIndex(p => p.id === project.id) : -1;
+    project.updatedAt = Date.now();
+    if (idx >= 0) {
+      list[idx] = project;
+    } else {
+      project.id = project.id || ('PRJ-' + Date.now());
+      project.createdAt = project.createdAt || Date.now();
+      list.push(project);
+    }
+    this._set(this.KEYS.projects, list);
+    this._cloudPush('projects', project);
+    return project;
+  },
+  deleteProject(id) {
+    const list = this.getProjects().filter(p => p.id !== id);
+    this._set(this.KEYS.projects, list);
+    this._cloudRemove('projects', id);
+  },
+
+  // ---- Project logs ----
+  // A running log of project activity: lifts, deliveries, inspections,
+  // toolbox talks, incidents, visits, notes — with the people involved so a
+  // project's history and who was on site stays easy to track. Logs can be
+  // edited later and those updates re-sync to the cloud like any other record.
+  getLogs() {
+    return this._get(this.KEYS.logs);
+  },
+  getLog(id) {
+    return this.getLogs().find(l => l.id === id) || null;
+  },
+  getLogsForProject(projectId) {
+    return this.getLogs().filter(l => l.projectId === projectId);
+  },
+  saveLog(log) {
+    const list = this.getLogs();
+    const idx = log.id ? list.findIndex(l => l.id === log.id) : -1;
+    log.updatedAt = Date.now();
+    if (idx >= 0) {
+      list[idx] = log;
+    } else {
+      log.id = log.id || ('LOG-' + Date.now());
+      log.createdAt = log.createdAt || Date.now();
+      list.push(log);
+    }
+    this._set(this.KEYS.logs, list);
+    this._cloudPush('logs', log);
+    return log;
+  },
+  deleteLog(id) {
+    const list = this.getLogs().filter(l => l.id !== id);
+    this._set(this.KEYS.logs, list);
+    this._cloudRemove('logs', id);
+  },
+
   // ---- Backup / restore ----
   exportAll() {
     return {
       exportedAt: new Date().toISOString(),
       assessments: this.getAssessments(),
       permits: this.getPermits(),
-      checklists: this.getChecklists()
+      checklists: this.getChecklists(),
+      projects: this.getProjects(),
+      logs: this.getLogs()
     };
   },
-  // Backups written before checklists existed simply have no `checklists` key —
+  // Backups written before a collection existed simply have no key for it —
   // `|| []` keeps those files importable, and a merge of an old backup leaves
-  // any checklists already on this device alone.
+  // any records already on this device alone.
   importAll(data, mode = 'merge') {
     if (mode === 'replace') {
       this._set(this.KEYS.assessments, data.assessments || []);
       this._set(this.KEYS.permits, data.permits || []);
       this._set(this.KEYS.checklists, data.checklists || []);
+      this._set(this.KEYS.projects, data.projects || []);
+      this._set(this.KEYS.logs, data.logs || []);
       return;
     }
-    const existingA = this.getAssessments();
-    const existingP = this.getPermits();
-    const existingC = this.getChecklists();
-    const idsA = new Set(existingA.map(a => a.id));
-    const idsP = new Set(existingP.map(p => p.id));
-    const idsC = new Set(existingC.map(c => c.id));
-    (data.assessments || []).forEach(a => { if (!idsA.has(a.id)) existingA.push(a); });
-    (data.permits || []).forEach(p => { if (!idsP.has(p.id)) existingP.push(p); });
-    (data.checklists || []).forEach(c => { if (!idsC.has(c.id)) existingC.push(c); });
-    this._set(this.KEYS.assessments, existingA);
-    this._set(this.KEYS.permits, existingP);
-    this._set(this.KEYS.checklists, existingC);
+    const merge = (key, incoming) => {
+      const existing = this._get(key);
+      const ids = new Set(existing.map(r => r.id));
+      (incoming || []).forEach(r => { if (!ids.has(r.id)) existing.push(r); });
+      this._set(key, existing);
+    };
+    merge(this.KEYS.assessments, data.assessments);
+    merge(this.KEYS.permits, data.permits);
+    merge(this.KEYS.checklists, data.checklists);
+    merge(this.KEYS.projects, data.projects);
+    merge(this.KEYS.logs, data.logs);
   }
 };
 
