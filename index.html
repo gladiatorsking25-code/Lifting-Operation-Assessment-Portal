@@ -57,6 +57,9 @@
       <div class="section-title">Recent assessments</div>
       <div id="recent-assessments"></div>
 
+      <div class="section-title">Recent project log entries</div>
+      <div id="recent-logs"></div>
+
       <div id="app-footer"></div>
     </div>
   </div>
@@ -201,6 +204,33 @@ document.getElementById('recent-assessments').innerHTML = recent.length ? `
     </tbody>
   </table>
 ` : `<div class="card empty-state"><div class="icon">＋</div>No assessments yet. <a href="assessment.html">Run your first lift assessment</a>.</div>`;
+
+// Recent project log entries — a running record of activity and the people involved.
+(function renderRecentLogs() {
+  const esch = (v) => String(v == null ? '' : v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const projById = DB.getProjects().reduce((m, p) => { m[p.id] = p; return m; }, {});
+  const logs = DB.getLogs().sort((a,b) => new Date(b.date||0) - new Date(a.date||0)).slice(0, 6);
+  const host = document.getElementById('recent-logs');
+  if (!host) return;
+  host.innerHTML = logs.length ? `
+    <table class="data-table">
+      <thead><tr><th>Date</th><th>Project</th><th>Category</th><th>Entry</th><th>People</th></tr></thead>
+      <tbody>
+        ${logs.map(l => {
+          const proj = projById[l.projectId];
+          const people = (l.people || []).map(p => p.name).filter(Boolean).join(', ');
+          return `<tr>
+            <td class="num">${fmtDate(l.date)}</td>
+            <td>${proj ? esch(proj.name) : '<span style="color:var(--ink-soft)">Unassigned</span>'}</td>
+            <td>${esch(l.category) || '—'}</td>
+            <td><a href="log.html?id=${encodeURIComponent(l.id)}&mode=view">${esch(l.title) || '—'}</a></td>
+            <td>${esch(people) || '—'}</td>
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table>
+  ` : `<div class="card empty-state"><div class="icon">📖</div>No project log entries yet. <a href="projects.html">Set up a project</a> and start logging activity.</div>`;
+})();
 </script>
 <script src="js/pwa.js"></script>
 </body>

@@ -1,17 +1,30 @@
 function renderSidebar(active) {
   const el = document.getElementById('sidebar');
   if (!el) return;
-  const items = [
-    { key: 'index', href: 'index.html', label: 'Dashboard', icon: 'grid' },
-    { key: 'assessment', href: 'assessment.html', label: 'New assessment', icon: 'gauge' },
-    { key: 'selector', href: 'crane-selector.html', label: 'Crane selector', icon: 'search' },
-    { key: 'history', href: 'history.html', label: 'Assessment history', icon: 'clock' },
-    { key: 'permit', href: 'permit.html', label: 'New permit', icon: 'doc' },
-    { key: 'permits', href: 'permits.html', label: 'All permits', icon: 'stack' },
-    { key: 'settings', href: 'settings.html', label: 'Fleet & backup', icon: 'gear' },
-    { key: 'about', href: 'about.html', label: 'About & legal', icon: 'info' },
-    { key: 'checklist', href: 'checklist.html', label: 'Equipment checklist', icon: 'clipboard' },
-    { key: 'checklists', href: 'checklists.html', label: 'Checklist records', icon: 'stack' },
+  // Grouped so items can be added/reordered without re-slicing by index.
+  const sections = [
+    { label: 'Operations', items: [
+      { key: 'index', href: 'index.html', label: 'Dashboard', icon: 'grid' },
+      { key: 'assessment', href: 'assessment.html', label: 'New assessment', icon: 'gauge' },
+      { key: 'selector', href: 'crane-selector.html', label: 'Crane selector', icon: 'search' },
+      { key: 'history', href: 'history.html', label: 'Assessment history', icon: 'clock' },
+    ] },
+    { label: 'Projects', items: [
+      { key: 'projects', href: 'projects.html', label: 'Projects', icon: 'folder' },
+      { key: 'logs', href: 'logs.html', label: 'Project logs', icon: 'book' },
+    ] },
+    { label: 'Permits', items: [
+      { key: 'permit', href: 'permit.html', label: 'New permit', icon: 'doc' },
+      { key: 'permits', href: 'permits.html', label: 'All permits', icon: 'stack' },
+    ] },
+    { label: 'Equipment', items: [
+      { key: 'checklist', href: 'checklist.html', label: 'Equipment checklist', icon: 'clipboard' },
+      { key: 'checklists', href: 'checklists.html', label: 'Checklist records', icon: 'stack' },
+    ] },
+    { label: 'Configuration', items: [
+      { key: 'settings', href: 'settings.html', label: 'Fleet & backup', icon: 'gear' },
+      { key: 'about', href: 'about.html', label: 'About & legal', icon: 'info' },
+    ] },
   ];
   const icons = {
     grid: '<path d="M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h7v7h-7z" stroke="currentColor" stroke-width="1.6" fill="none"/>',
@@ -22,7 +35,9 @@ function renderSidebar(active) {
     stack: '<path d="M12 3l9 5-9 5-9-5z" stroke="currentColor" stroke-width="1.6" fill="none"/><path d="M3 13l9 5 9-5M3 8l9 5 9-5" stroke="currentColor" stroke-width="1.6" fill="none"/>',
     gear: '<path d="M12 15a3 3 0 100-6 3 3 0 000 6z" stroke="currentColor" stroke-width="1.6" fill="none"/><path d="M19.4 13a7.4 7.4 0 000-2l2-1.5-2-3.4-2.4.6a7.6 7.6 0 00-1.7-1L14.7 3h-4l-.6 2.7a7.6 7.6 0 00-1.7 1l-2.4-.6-2 3.4L6 11a7.4 7.4 0 000 2l-2 1.6 2 3.4 2.4-.6a7.6 7.6 0 001.7 1l.6 2.6h4l.6-2.6a7.6 7.6 0 001.7-1l2.4.6 2-3.4z" stroke="currentColor" stroke-width="1.3" fill="none"/>',
     info: '<circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6" fill="none"/><path d="M12 11v6M12 7.5h.01" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>',
-    clipboard: '<path d="M9 3h6v3H9z" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="M9 4.5H6v17h12v-17h-3" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="M9 11l1.6 1.6L14 9M9 16.5h6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none"/>'
+    clipboard: '<path d="M9 3h6v3H9z" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="M9 4.5H6v17h12v-17h-3" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="M9 11l1.6 1.6L14 9M9 16.5h6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none"/>',
+    folder: '<path d="M3 6.5A1.5 1.5 0 014.5 5h4l2 2.2h7A1.5 1.5 0 0119 8.7V18a1.5 1.5 0 01-1.5 1.5h-13A1.5 1.5 0 013 18z" stroke="currentColor" stroke-width="1.5" fill="none"/>',
+    book: '<path d="M5 4h11a2 2 0 012 2v14H7a2 2 0 01-2-2z" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="M5 18a2 2 0 012-2h11M9 8h6M9 11.5h6" stroke="currentColor" stroke-width="1.4" fill="none" stroke-linecap="round"/>'
   };
   el.innerHTML = `
     <div class="brand">
@@ -35,14 +50,7 @@ function renderSidebar(active) {
       </div>
     </div>
     <nav class="nav">
-      <div class="section-label">Operations</div>
-      ${items.slice(0,4).map(navLink).join('')}
-      <div class="section-label">Permits</div>
-      ${items.slice(4,6).map(navLink).join('')}
-      <div class="section-label">Equipment</div>
-      ${items.slice(8).map(navLink).join('')}
-      <div class="section-label">Configuration</div>
-      ${items.slice(6,8).map(navLink).join('')}
+      ${sections.map(s => `<div class="section-label">${s.label}</div>${s.items.map(navLink).join('')}`).join('')}
     </nav>
     <div class="sidebar-foot">
       <div id="navSubStatus" class="nav-sub-status"></div>

@@ -13,7 +13,7 @@
 // Bump CACHE_VERSION on every deployment (it must match APP_VERSION in
 // js/app-version.js — see the note there).
 
-const CACHE_VERSION = 'v1.5.4';
+const CACHE_VERSION = 'v1.6.0';
 const CACHE_NAME = `cla-${CACHE_VERSION}`;
 const OFFLINE_URL = 'offline.html';
 
@@ -32,6 +32,10 @@ const PRECACHE_URLS = [
   'history.html',
   'permit.html',
   'permits.html',
+  'projects.html',
+  'project.html',
+  'logs.html',
+  'log.html',
   'settings.html',
   'terms.html',
   'privacy.html',

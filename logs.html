@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script src="js/auth.js"></script>
+<script src="js/consent.js"></script>
+<script>requireConsent();</script>
+<script src="js/firebase-config.js"></script>
+<script src="js/firebase-init.js"></script>
+<script src="js/firebase-auth.js"></script>
+<script src="js/subscription-config.js"></script>
+<script src="js/entitlements.js"></script>
+<script src="js/access.js"></script>
+<script>requireAccess();</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Project Logs · Duck HSE Portal</title>
+<link rel="stylesheet" href="css/styles.css">
+<!-- Installable-app / PWA metadata (see manifest.webmanifest, sw.js, js/pwa.js) -->
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#16283a">
+<meta name="color-scheme" content="light">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Duck HSE">
+<meta name="description" content="A running log of project activity — lifts, deliveries, inspections, toolbox talks and incidents — with the people involved, filterable per project.">
+<link rel="icon" href="assets/icons/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
+<link rel="apple-touch-icon" href="assets/icons/apple-touch-icon-180.png">
+<script src="js/app-version.js"></script>
+</head>
+<body>
+<div class="app-shell">
+  <aside class="sidebar" id="sidebar"></aside>
+  <div class="main">
+    <div class="topbar">
+      <div>
+        <h2>Project logs</h2>
+        <div class="crumb">Track activity and people across every project</div>
+      </div>
+      <a class="btn btn-primary" id="btnNew" href="log.html">+ New log entry</a>
+    </div>
+
+    <div class="content">
+      <div id="projectBanner"></div>
+
+      <div class="toolbar">
+        <input type="search" id="search" placeholder="Search entry, details, people, reference…">
+        <select id="filterProject"><option value="">All projects</option></select>
+        <select id="filterCategory"><option value="">All categories</option></select>
+        <select id="filterStatus">
+          <option value="">Any status</option>
+          <option value="open">Open</option>
+          <option value="closed">Closed</option>
+          <option value="info">Info</option>
+        </select>
+        <span class="spacer"></span>
+        <span class="certificate-summary" id="count"></span>
+      </div>
+      <div id="tableWrap"></div>
+      <div id="app-footer"></div>
+    </div>
+  </div>
+</div>
+
+<script src="js/crane-data.js"></script>
+<script src="js/storage.js"></script>
+<script src="js/cloud-sync.js"></script>
+<script src="js/nav.js"></script>
+<script>
+renderSidebar('logs');
+renderFooter('app-footer');
+
+function esc(v) {
+  return String(v == null ? '' : v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function safeUrl(u) { const s = String(u || '').trim(); return /^https?:\/\//i.test(s) ? s : ''; }
+
+const CATEGORIES = ['Lift', 'Delivery', 'Inspection', 'Toolbox talk', 'Incident', 'Site visit', 'Meeting', 'Progress', 'Note'];
+function statusBadge(s) {
+  if (s === 'closed') return '<span class="badge badge-ok"><span class="badge-dot"></span>Closed</span>';
+  if (s === 'info') return '<span class="badge badge-neutral"><span class="badge-dot"></span>Info</span>';
+  if (s === 'open') return '<span class="badge badge-warn"><span class="badge-dot"></span>Open</span>';
+  return '';
+}
+
+const params = new URLSearchParams(location.search);
+const presetProject = params.get('project') || '';
+
+function projectMap() {
+  return DB.getProjects().reduce((m, p) => { m[p.id] = p; return m; }, {});
+}
+
+// Populate the filter selects.
+(function initFilters() {
+  const projSel = document.getElementById('filterProject');
+  DB.getProjects().sort((a,b) => (a.name||'').localeCompare(b.name||'')).forEach(p => {
+    const o = document.createElement('option');
+    o.value = p.id; o.textContent = p.name || '(untitled project)';
+    projSel.appendChild(o);
+  });
+  if (presetProject) projSel.value = presetProject;
+  const catSel = document.getElementById('filterCategory');
+  CATEGORIES.forEach(c => { const o = document.createElement('option'); o.value = c; o.textContent = c; catSel.appendChild(o); });
+  // Carry the preset project into the "New entry" button.
+  if (presetProject) document.getElementById('btnNew').href = 'log.html?project=' + encodeURIComponent(presetProject);
+})();
+
+function render() {
+  const search = document.getElementById('search').value.toLowerCase();
+  const projectFilter = document.getElementById('filterProject').value;
+  const categoryFilter = document.getElementById('filterCategory').value;
+  const statusFilter = document.getElementById('filterStatus').value;
+  const projects = projectMap();
+
+  // A banner showing the active project's Drive folder / linked sheet, when one project is selected.
+  const banner = document.getElementById('projectBanner');
+  const activeProject = projectFilter ? projects[projectFilter] : null;
+  if (activeProject) {
+    const drive = safeUrl(activeProject.driveFolderUrl);
+    const sheet = safeUrl(activeProject.sheetUrl);
+    const links = [
+      drive ? `<a class="btn btn-sm" href="${esc(drive)}" target="_blank" rel="noopener">📁 Drive folder</a>` : '',
+      sheet ? `<a class="btn btn-sm" href="${esc(sheet)}" target="_blank" rel="noopener">📊 Log sheet</a>` : '',
+      `<a class="btn btn-sm" href="project.html?id=${encodeURIComponent(activeProject.id)}&mode=view">Project details</a>`
+    ].join('');
+    banner.innerHTML = `<div class="sub-panel state-active"><div class="sub-panel-main"><div class="sub-panel-title">${esc(activeProject.name) || 'Project'}</div><div class="sub-panel-detail">${esc(activeProject.client) || ''}${activeProject.location ? ' · ' + esc(activeProject.location) : ''}</div></div><div class="sub-panel-actions">${links}</div></div>`;
+  } else {
+    banner.innerHTML = '';
+  }
+
+  let list = DB.getLogs().sort((a,b) => new Date(b.date||0) - new Date(a.date||0));
+  list = list.filter(l => {
+    if (projectFilter && l.projectId !== projectFilter) return false;
+    if (categoryFilter && l.category !== categoryFilter) return false;
+    if (statusFilter && (l.status || '') !== statusFilter) return false;
+    if (search) {
+      const people = (l.people || []).map(p => `${p.name || ''} ${p.role || ''}`).join(' ');
+      const proj = projects[l.projectId] ? projects[l.projectId].name : '';
+      const hay = `${l.title||''} ${l.details||''} ${l.category||''} ${l.reference||''} ${l.location||''} ${people} ${proj}`.toLowerCase();
+      if (!hay.includes(search)) return false;
+    }
+    return true;
+  });
+
+  document.getElementById('count').textContent = list.length ? `${list.length} entr${list.length === 1 ? 'y' : 'ies'}` : '';
+
+  const wrap = document.getElementById('tableWrap');
+  if (!list.length) {
+    const hasProjects = DB.getProjects().length > 0;
+    wrap.innerHTML = `<div class="card empty-state"><div class="icon">📖</div>${
+      hasProjects
+        ? 'No log entries match these filters. <a href="log.html">Add a log entry</a>.'
+        : 'No projects yet. <a href="project.html">Create a project</a> first, then start logging activity.'
+    }</div>`;
+    return;
+  }
+  wrap.innerHTML = `
+    <table class="data-table">
+      <thead><tr>
+        <th>Date</th><th>Project</th><th>Category</th><th>Entry</th><th>People</th><th>Status</th><th></th>
+      </tr></thead>
+      <tbody>
+        ${list.map(l => {
+          const proj = projects[l.projectId];
+          const people = (l.people || []).map(p => p.name).filter(Boolean).join(', ');
+          const doc = safeUrl(l.documentUrl) ? ` <a href="${esc(l.documentUrl)}" target="_blank" rel="noopener" title="Attached document">📎</a>` : '';
+          return `<tr>
+            <td class="num">${fmtDate(l.date)}</td>
+            <td>${proj ? `<a href="project.html?id=${encodeURIComponent(proj.id)}&mode=view">${esc(proj.name)}</a>` : '<span style="color:var(--ink-soft)">Unassigned</span>'}</td>
+            <td>${esc(l.category) || '—'}</td>
+            <td>${esc(l.title) || '—'}${doc}</td>
+            <td>${esc(people) || '—'}</td>
+            <td>${statusBadge(l.status)}</td>
+            <td style="white-space:nowrap;">
+              <a class="btn btn-sm" href="log.html?id=${encodeURIComponent(l.id)}&mode=view">View</a>
+              <a class="btn btn-sm" href="log.html?id=${encodeURIComponent(l.id)}">Edit</a>
+              <button class="btn btn-sm btn-danger" onclick="removeLog('${esc(l.id)}')">Delete</button>
+            </td>
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table>
+  `;
+}
+
+function removeLog(id) {
+  if (!confirm('Delete this log entry? This cannot be undone.')) return;
+  DB.deleteLog(id);
+  render();
+}
+
+document.getElementById('search').addEventListener('input', render);
+document.getElementById('filterProject').addEventListener('change', render);
+document.getElementById('filterCategory').addEventListener('change', render);
+document.getElementById('filterStatus').addEventListener('change', render);
+render();
+window.addEventListener('portal-records-updated', render);
+</script>
+<script src="js/pwa.js"></script>
+</body>
+</html>

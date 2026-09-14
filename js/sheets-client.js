@@ -16,7 +16,7 @@ const SheetsBackend = (() => {
     if (uid !== previous) {
       if (typeof CloudSync !== 'undefined') CloudSync.stop();
       // Preserve the old device data under its owner, including the pre-migration local account.
-      for (const key of ['cla_assessments', 'cla_permits', 'cla_checklists', 'cla_permit_counter']) {
+      for (const key of ['cla_assessments', 'cla_permits', 'cla_checklists', 'cla_projects', 'cla_logs', 'cla_permit_counter']) {
         const old = localStorage.getItem(key);
         if (old != null) localStorage.setItem(`cla_archive:${previous || 'local'}:${key}`, old);
         const saved = uid ? localStorage.getItem(`cla_archive:${uid}:${key}`) : null;

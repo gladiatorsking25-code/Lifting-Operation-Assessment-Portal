@@ -47,6 +47,13 @@
       "description": "Browse and print saved lift assessments",
       "url": "./history.html",
       "icons": [{ "src": "assets/icons/icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    },
+    {
+      "name": "Project logs",
+      "short_name": "Logs",
+      "description": "Track project activity and the people involved",
+      "url": "./logs.html",
+      "icons": [{ "src": "assets/icons/icon-192.png", "sizes": "192x192", "type": "image/png" }]
     }
   ]
 }

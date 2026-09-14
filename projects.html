@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script src="js/auth.js"></script>
+<script src="js/consent.js"></script>
+<script>requireConsent();</script>
+<script src="js/firebase-config.js"></script>
+<script src="js/firebase-init.js"></script>
+<script src="js/firebase-auth.js"></script>
+<script src="js/subscription-config.js"></script>
+<script src="js/entitlements.js"></script>
+<script src="js/access.js"></script>
+<script>requireAccess();</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Projects · Duck HSE Portal</title>
+<link rel="stylesheet" href="css/styles.css">
+<!-- Installable-app / PWA metadata (see manifest.webmanifest, sw.js, js/pwa.js) -->
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#16283a">
+<meta name="color-scheme" content="light">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Duck HSE">
+<meta name="description" content="Manage lifting-operation projects, their activity logs and their per-project Google Drive document folders.">
+<link rel="icon" href="assets/icons/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
+<link rel="apple-touch-icon" href="assets/icons/apple-touch-icon-180.png">
+<script src="js/app-version.js"></script>
+</head>
+<body>
+<div class="app-shell">
+  <aside class="sidebar" id="sidebar"></aside>
+  <div class="main">
+    <div class="topbar">
+      <div>
+        <h2>Projects</h2>
+        <div class="crumb">Every project, its logs and its documents</div>
+      </div>
+      <a class="btn btn-primary" href="project.html">+ New project</a>
+    </div>
+
+    <div class="content">
+      <div class="banner banner-info">
+        <svg width="16" height="16" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6" fill="none"/><path d="M12 11v6M12 7.5h.01" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        <div>Create a project for each site or job. Give it a <strong>Google Drive folder link</strong> so every document for that project is filed in one place, then keep a running <strong>project log</strong> of who did what and when.</div>
+      </div>
+
+      <div class="toolbar">
+        <input type="search" id="search" placeholder="Search name, number, client, location…">
+        <select id="filterStatus">
+          <option value="">All statuses</option>
+          <option value="active">Active</option>
+          <option value="on-hold">On hold</option>
+          <option value="completed">Completed</option>
+        </select>
+      </div>
+      <div id="tableWrap"></div>
+      <div id="app-footer"></div>
+    </div>
+  </div>
+</div>
+
+<script src="js/crane-data.js"></script>
+<script src="js/storage.js"></script>
+<script src="js/cloud-sync.js"></script>
+<script src="js/nav.js"></script>
+<script>
+renderSidebar('projects');
+renderFooter('app-footer');
+
+function esc(v) {
+  return String(v == null ? '' : v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function statusBadge(s) {
+  if (s === 'completed') return '<span class="badge badge-neutral"><span class="badge-dot"></span>Completed</span>';
+  if (s === 'on-hold') return '<span class="badge badge-warn"><span class="badge-dot"></span>On hold</span>';
+  return '<span class="badge badge-ok"><span class="badge-dot"></span>Active</span>';
+}
+
+function render() {
+  const search = document.getElementById('search').value.toLowerCase();
+  const statusFilter = document.getElementById('filterStatus').value;
+
+  const logCounts = DB.getLogs().reduce((m, l) => { m[l.projectId] = (m[l.projectId] || 0) + 1; return m; }, {});
+  let list = DB.getProjects().sort((a,b) => (b.updatedAt||0) - (a.updatedAt||0));
+  list = list.filter(p => {
+    if (statusFilter && (p.status || 'active') !== statusFilter) return false;
+    if (search) {
+      const hay = `${p.name||''} ${p.projectNumber||''} ${p.client||''} ${p.location||''}`.toLowerCase();
+      if (!hay.includes(search)) return false;
+    }
+    return true;
+  });
+
+  const wrap = document.getElementById('tableWrap');
+  if (!list.length) {
+    wrap.innerHTML = `<div class="card empty-state"><div class="icon">📁</div>No projects match these filters. <a href="project.html">Create a project</a>.</div>`;
+    return;
+  }
+  wrap.innerHTML = `
+    <table class="data-table">
+      <thead><tr>
+        <th>Project</th><th>Number</th><th>Client</th><th>Location</th><th>Status</th><th>Logs</th><th>Documents</th><th></th>
+      </tr></thead>
+      <tbody>
+        ${list.map(p => {
+          const n = logCounts[p.id] || 0;
+          const drive = p.driveFolderUrl
+            ? `<a class="btn btn-sm" href="${esc(p.driveFolderUrl)}" target="_blank" rel="noopener">Open Drive</a>`
+            : '<span style="color:var(--ink-soft);font-size:12px;">—</span>';
+          return `<tr>
+            <td><strong>${esc(p.name) || '—'}</strong></td>
+            <td class="num">${esc(p.projectNumber) || '—'}</td>
+            <td>${esc(p.client) || '—'}</td>
+            <td>${esc(p.location) || '—'}</td>
+            <td>${statusBadge(p.status || 'active')}</td>
+            <td class="num"><a href="logs.html?project=${encodeURIComponent(p.id)}">${n}</a></td>
+            <td>${drive}</td>
+            <td style="white-space:nowrap;">
+              <a class="btn btn-sm" href="project.html?id=${encodeURIComponent(p.id)}&mode=view">View</a>
+              <a class="btn btn-sm" href="project.html?id=${encodeURIComponent(p.id)}">Edit</a>
+              <button class="btn btn-sm btn-danger" onclick="removeProject('${esc(p.id)}')">Delete</button>
+            </td>
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table>
+  `;
+}
+
+function removeProject(id) {
+  const n = DB.getLogsForProject(id).length;
+  const msg = n
+    ? `Delete this project? Its ${n} log entr${n === 1 ? 'y' : 'ies'} will be kept but left unassigned. This cannot be undone.`
+    : 'Delete this project? This cannot be undone.';
+  if (!confirm(msg)) return;
+  DB.deleteProject(id);
+  render();
+}
+
+document.getElementById('search').addEventListener('input', render);
+document.getElementById('filterStatus').addEventListener('change', render);
+render();
+window.addEventListener('portal-records-updated', render);
+</script>
+<script src="js/pwa.js"></script>
+</body>
+</html>
